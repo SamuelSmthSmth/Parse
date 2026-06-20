@@ -26,9 +26,14 @@
       --divider:      rgba(220, 220, 232, 0.055);
       --caret-col:    #8b78ff;
       --caret-glow:   rgba(139, 120, 255, 0.50);
+      --caret-err:    #ff6b6b;
+      --caret-err-glow: rgba(255, 107, 107, 0.45);
       --pill-bg:      rgba(255, 255, 255, 0.055);
       --pill-border:  rgba(255, 255, 255, 0.09);
       --err:          #ff6b6b;
+      --panel-bg:     rgba(11, 11, 16, 0.88);
+      --panel-border: rgba(255, 255, 255, 0.07);
+      --toggle-on:    #8b78ff;
       --mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
       --sans: 'Inter', system-ui, sans-serif;
       --ease: cubic-bezier(0.4, 0, 0.2, 1);
@@ -42,9 +47,86 @@
       --divider:      rgba(24, 24, 42, 0.07);
       --caret-col:    #5a48f0;
       --caret-glow:   rgba(90, 72, 240, 0.42);
+      --caret-err:    #d03030;
+      --caret-err-glow: rgba(208, 48, 48, 0.38);
       --pill-bg:      rgba(0, 0, 0, 0.045);
       --pill-border:  rgba(0, 0, 0, 0.09);
       --err:          #d03030;
+      --panel-bg:     rgba(240, 240, 245, 0.92);
+      --panel-border: rgba(0, 0, 0, 0.07);
+      --toggle-on:    #5a48f0;
+    }
+
+    [data-theme="dracula"] {
+      --bg:           #282a36;
+      --fg:           #f8f8f2;
+      --fg-dim:       rgba(248, 248, 242, 0.4);
+      --fg-subtle:    rgba(248, 248, 242, 0.15);
+      --divider:      rgba(248, 248, 242, 0.1);
+      --caret-col:    #bd93f9;
+      --caret-glow:   rgba(189, 147, 249, 0.5);
+      --caret-err:    #ff5555;
+      --caret-err-glow: rgba(255, 85, 85, 0.5);
+      --pill-bg:      rgba(255, 255, 255, 0.05);
+      --pill-border:  rgba(255, 255, 255, 0.1);
+      --err:          #ff5555;
+      --panel-bg:     rgba(40, 42, 54, 0.92);
+      --panel-border: rgba(255, 255, 255, 0.1);
+      --toggle-on:    #bd93f9;
+    }
+
+    [data-theme="gruvbox"] {
+      --bg:           #282828;
+      --fg:           #ebdbb2;
+      --fg-dim:       rgba(235, 219, 178, 0.4);
+      --fg-subtle:    rgba(235, 219, 178, 0.15);
+      --divider:      rgba(235, 219, 178, 0.1);
+      --caret-col:    #fabd2f;
+      --caret-glow:   rgba(250, 189, 47, 0.5);
+      --caret-err:    #fb4934;
+      --caret-err-glow: rgba(251, 73, 52, 0.5);
+      --pill-bg:      rgba(255, 255, 255, 0.05);
+      --pill-border:  rgba(255, 255, 255, 0.1);
+      --err:          #fb4934;
+      --panel-bg:     rgba(40, 40, 40, 0.92);
+      --panel-border: rgba(255, 255, 255, 0.1);
+      --toggle-on:    #fabd2f;
+    }
+
+    [data-theme="nord"] {
+      --bg:           #2e3440;
+      --fg:           #eceff4;
+      --fg-dim:       rgba(236, 239, 244, 0.4);
+      --fg-subtle:    rgba(236, 239, 244, 0.15);
+      --divider:      rgba(236, 239, 244, 0.1);
+      --caret-col:    #88c0d0;
+      --caret-glow:   rgba(136, 192, 208, 0.5);
+      --caret-err:    #bf616a;
+      --caret-err-glow: rgba(191, 97, 106, 0.5);
+      --pill-bg:      rgba(255, 255, 255, 0.05);
+      --pill-border:  rgba(255, 255, 255, 0.1);
+      --err:          #bf616a;
+      --panel-bg:     rgba(46, 52, 64, 0.92);
+      --panel-border: rgba(255, 255, 255, 0.1);
+      --toggle-on:    #88c0d0;
+    }
+
+    [data-theme="matrix"] {
+      --bg:           #000000;
+      --fg:           #00ff00;
+      --fg-dim:       rgba(0, 255, 0, 0.4);
+      --fg-subtle:    rgba(0, 255, 0, 0.15);
+      --divider:      rgba(0, 255, 0, 0.2);
+      --caret-col:    #00ff00;
+      --caret-glow:   rgba(0, 255, 0, 0.6);
+      --caret-err:    #ff0000;
+      --caret-err-glow: rgba(255, 0, 0, 0.6);
+      --pill-bg:      rgba(0, 255, 0, 0.05);
+      --pill-border:  rgba(0, 255, 0, 0.2);
+      --err:          #ff0000;
+      --panel-bg:     rgba(0, 0, 0, 0.92);
+      --panel-border: rgba(0, 255, 0, 0.2);
+      --toggle-on:    #00ff00;
     }
 
     /* ════════════════════════════════════════════════════════════════
@@ -65,13 +147,31 @@
     }
 
     /* ════════════════════════════════════════════════════════════════
-       LAYOUT — exact 50 / 50 vertical split
+       LAYOUT — Notebook Architecture
     ════════════════════════════════════════════════════════════════ */
     #app {
-      display: grid;
-      grid-template-rows: 1fr 1fr;
       height: 100vh;
       width: 100vw;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-bottom: 50vh; /* Allow scrolling past the last block */
+      scroll-behavior: smooth;
+    }
+
+    #blocks-container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+
+    .block {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      min-height: 100vh;
+      padding: 4rem 0;
+      position: relative;
+      justify-content: center;
     }
 
     .pane {
@@ -79,18 +179,21 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      overflow: hidden; /* clips any overflowing natural layout before scale kicks in */
+      width: 100%;
     }
 
-    #pane-top {
-      /* hair-line divider — barely visible, no visual "box" */
-      border-bottom: 1px solid var(--divider);
+    .pane-input {
+      margin-bottom: 2rem;
+    }
+
+    .pane-output {
+      flex-direction: column;
+      gap: 0.6rem;
+      min-height: 4rem;
     }
 
     /* ════════════════════════════════════════════════════════════════
        SCALE WRAPPER
-       JS applies transform: scale() here to shrink oversized content.
-       transform-origin: center center keeps the content centered.
     ════════════════════════════════════════════════════════════════ */
     .scale-wrapper {
       display: inline-flex;
@@ -104,7 +207,7 @@
     /* ════════════════════════════════════════════════════════════════
        TEXTAREA  (LaTeX input)
     ════════════════════════════════════════════════════════════════ */
-    #latex-input {
+    .latex-input {
       display: block;
       border: none;
       outline: none;
@@ -116,26 +219,22 @@
       line-height: 1.65;
       letter-spacing: 0.018em;
       resize: none;
-      /* no horizontal wrapping — content grows wider, JS scales it down */
       white-space: pre;
       word-break: keep-all;
-      overflow: hidden;   /* JS always sets width ≥ content width, so nothing clips */
-      /* hide the native OS caret — our custom caret replaces it */
+      overflow: hidden;
       caret-color: transparent;
       padding: 0;
-      min-width: 48vw;    /* comfortable default before content grows */
-      text-align: center; /* mirror the centered output pane below */
+      min-width: 48vw;
+      text-align: center;
     }
 
-    #latex-input::placeholder {
+    .latex-input::placeholder {
       color: var(--fg-dim);
       font-style: italic;
     }
 
     /* ════════════════════════════════════════════════════════════════
-       MIRROR DIV — off-screen, invisible, used for two things:
-         1. Measuring the natural (unscaled) content width
-         2. Locating the cursor position for the custom caret
+       MIRROR DIV — off-screen measurement tool
     ════════════════════════════════════════════════════════════════ */
     #mirror {
       position: fixed;
@@ -143,16 +242,12 @@
       left: -9999px;
       visibility: hidden;
       pointer-events: none;
-      /* font properties are synced to textarea by JS */
       white-space: pre;
       word-break: keep-all;
     }
 
     /* ════════════════════════════════════════════════════════════════
        CUSTOM CARET
-       A glowing 2px bar that replaces the native OS text cursor.
-       Position is updated in JS via getBoundingClientRect() on
-       a sentinel <span> inside the mirror div.
     ════════════════════════════════════════════════════════════════ */
     #custom-caret {
       position: fixed;
@@ -163,36 +258,33 @@
       box-shadow: 0 0 8px  var(--caret-glow),
                   0 0 22px var(--caret-glow);
       pointer-events: none;
-      opacity: 0;  /* shown only when textarea is focused */
-      /* smooth position tracking for quick typists */
+      opacity: 0;
       transition: left   0.05s var(--ease),
                   top    0.05s var(--ease),
                   opacity 0.18s ease,
-                  background 0.35s ease,
-                  box-shadow  0.35s ease;
-      /* blink animation */
+                  background 0.45s ease,
+                  box-shadow  0.45s ease;
       animation: caret-blink 1.05s ease-in-out infinite;
     }
 
     @keyframes caret-blink {
       0%, 100% { opacity: 1; }
-      42%, 58% { opacity: 0; }
+      42%, 58%  { opacity: 0; }
     }
 
     /* ════════════════════════════════════════════════════════════════
        KATEX OUTPUT
     ════════════════════════════════════════════════════════════════ */
-    #katex-output {
+    .katex-output {
       text-align: center;
       color: var(--fg);
       font-size: clamp(1.2rem, 3vw, 2.2rem);
     }
 
-    /* allow KaTeX to inherit our theme colour */
     .katex { color: inherit !important; }
     .katex-display { margin: 0 !important; overflow: visible !important; }
 
-    #output-hint {
+    .output-hint {
       font-family: var(--mono);
       font-size: clamp(0.72rem, 1.4vw, 0.92rem);
       font-weight: 300;
@@ -201,8 +293,30 @@
     }
 
     /* ════════════════════════════════════════════════════════════════
+       APPROX OUTPUT  — smaller, faded, below the main result
+    ════════════════════════════════════════════════════════════════ */
+    .approx-output {
+      text-align: center;
+      color: var(--fg-dim);
+      font-size: clamp(0.75rem, 1.6vw, 1.1rem);
+      opacity: 0;
+      max-height: 0;
+      overflow: hidden;
+      transition: opacity 0.35s var(--ease), max-height 0.35s var(--ease);
+      pointer-events: none;
+    }
+
+    .approx-output.visible {
+      opacity: 1;
+      max-height: 4rem;
+      pointer-events: auto;
+    }
+
+    .approx-output .katex { color: var(--fg-dim) !important; }
+    .approx-output .katex-display { margin: 0 !important; }
+
+    /* ════════════════════════════════════════════════════════════════
        UI CHROME — theme toggle, worker badge, corner label
-       All fixed, z-index: 500, intentionally minimal
     ════════════════════════════════════════════════════════════════ */
 
     /* ── Corner label (top-left) ── */
@@ -269,7 +383,6 @@
       background: currentColor;
     }
 
-    /* State colours — controlled via data-state attribute */
     #worker-badge[data-state="loading"] { color: #facc15; }
     #worker-badge[data-state="loading"] #worker-dot {
       animation: dot-pulse 0.9s ease-in-out infinite;
@@ -283,6 +396,95 @@
     @keyframes dot-pulse {
       0%, 100% { opacity: 1; }
       50%       { opacity: 0.15; }
+    }
+
+    /* ════════════════════════════════════════════════════════════════
+       COMMAND PALETTE
+    ════════════════════════════════════════════════════════════════ */
+    #cmd-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg-ovl);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 15vh;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    #cmd-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #cmd-palette {
+      width: 100%;
+      max-width: 600px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
+      overflow: hidden;
+      transform: translateY(-20px) scale(0.98);
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    #cmd-overlay.open #cmd-palette {
+      transform: translateY(0) scale(1);
+    }
+
+    #cmd-input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--divider);
+      padding: 1.25rem 1.5rem;
+      font-size: 1.2rem;
+      color: var(--fg);
+      font-family: var(--sans);
+      outline: none;
+    }
+
+    #cmd-input::placeholder {
+      color: var(--fg-subtle);
+    }
+
+    #cmd-results {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .cmd-item {
+      padding: 1rem 1.5rem;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 1rem;
+      color: var(--fg);
+      border-left: 3px solid transparent;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .cmd-item:hover, .cmd-item.selected {
+      background: var(--pill-subtle);
+      border-left-color: var(--caret-col);
+    }
+    
+    .cmd-item-desc {
+      font-family: var(--sans);
+      font-size: 0.8rem;
+      opacity: 0.5;
     }
   </style>
 </head>
@@ -304,37 +506,22 @@
 <!-- ── Mirror div (off-screen measurement tool) ─────────────────────── -->
 <div id="mirror" aria-hidden="true"></div>
 
+<!-- ── Command Palette ─────────────────────────────────────────────────── -->
+<div id="cmd-overlay" aria-hidden="true">
+  <div id="cmd-palette" role="dialog" aria-modal="true" aria-label="Command Palette">
+    <input type="text" id="cmd-input" placeholder="Search equations or commands (e.g. Theme, Approx)..." autocomplete="off" spellcheck="false" />
+    <ul id="cmd-results" role="listbox"></ul>
+  </div>
+</div>
+
+
 <!-- ════════════════════════════════════════════════════════════════════
-     MAIN SPLIT LAYOUT
+     NOTEBOOK LAYOUT
 ════════════════════════════════════════════════════════════════════ -->
 <div id="app">
-
-  <!-- Top half: LaTeX input -->
-  <section class="pane" id="pane-top" aria-label="LaTeX input">
-    <div class="scale-wrapper" id="input-scale">
-      <textarea
-        id="latex-input"
-        rows="1"
-        wrap="off"
-        spellcheck="false"
-        autocorrect="off"
-        autocomplete="off"
-        autocapitalize="off"
-        aria-label="Type a LaTeX expression"
-        placeholder="\int_{0}^{1} x^2 \, dx"
-      ></textarea>
-    </div>
-  </section>
-
-  <!-- Bottom half: rendered KaTeX result -->
-  <section class="pane" id="pane-bottom" aria-label="Rendered result">
-    <div class="scale-wrapper" id="output-scale">
-      <div id="katex-output" role="math" aria-live="polite">
-        <span id="output-hint">result appears here</span>
-      </div>
-    </div>
-  </section>
-
+  <div id="blocks-container" role="main" aria-label="Notebook blocks">
+    <!-- Blocks will be injected here by JS -->
+  </div>
 </div><!-- /#app -->
 
 
@@ -354,7 +541,7 @@
    │  receiveFromWorker(payload)                                         │
    │    Call this from your worker's onmessage handler:                  │
    │      worker.onmessage = ({ data }) => window.receiveFromWorker(data)│
-   │    payload shape: { status, result?, error? }                       │
+   │    payload shape: { id, status, result?, approx?, error? }          │
    │                                                                     │
    │  setWorkerStatus(state)                                             │
    │    Updates the status badge. states: 'loading' | 'ready' | 'error' │
@@ -365,22 +552,18 @@
 'use strict';
 
 /* ── DOM references ─────────────────────────────────────────────────── */
-const input       = document.getElementById('latex-input');
-const inputScale  = document.getElementById('input-scale');
-const outputScale = document.getElementById('output-scale');
-const katexOut    = document.getElementById('katex-output');
-const caret       = document.getElementById('custom-caret');
-const mirror      = document.getElementById('mirror');
-const themeBtn    = document.getElementById('theme-toggle');
-const workerBadge = document.getElementById('worker-badge');
-const workerLabel = document.getElementById('worker-label');
-const paneTop     = document.getElementById('pane-top');
-const paneBottom  = document.getElementById('pane-bottom');
+const caret         = document.getElementById('custom-caret');
+const mirror        = document.getElementById('mirror');
+const themeBtn      = document.getElementById('theme-toggle');
+const workerBadge   = document.getElementById('worker-badge');
+const workerLabel   = document.getElementById('worker-label');
+
 
 /* ── Tuning constants ───────────────────────────────────────────────── */
-const SAFE_MARGIN  = 0.88;    // max fraction of pane width content may occupy
-const MIN_W_VW     = 0.50;    // textarea minimum natural width (50vw)
-const DEBOUNCE_MS  = 130;     // ms quiet period before sendToWorker fires
+const SAFE_MARGIN  = 0.88;
+const MIN_W_VW     = 0.50;
+const DEBOUNCE_MS  = 130;
+const ERR_GLOW_MS  = 1500;   // ms of incomplete status before caret turns red
 
 /* ── Font properties to sync from textarea → mirror ────────────────── */
 const MIRROR_PROPS = [
@@ -391,120 +574,526 @@ const MIRROR_PROPS = [
   'boxSizing','whiteSpace','wordBreak',
 ];
 
-
-/* ════════════════════════════════════════════════════════════════════════
-   SECTION 1 — THEME
-════════════════════════════════════════════════════════════════════════ */
-let isDark = true;
-
-themeBtn.addEventListener('click', () => {
-  isDark = !isDark;
-  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-  themeBtn.textContent = isDark ? 'Light' : 'Dark';
-});
+/* ── LocalStorage keys ──────────────────────────────────────────────── */
+const LS = {
+  INPUT:       'latexcalc_input',
+  THEME:       'latexcalc_theme',
+  SHOW_APPROX: 'latexcalc_showApprox',
+  ASSUME_REAL: 'latexcalc_assumeReal',
+};
 
 
 /* ════════════════════════════════════════════════════════════════════════
-   SECTION 2 — WORKER INTEGRATION
-   ──────────────────────────────────────────────────────────────────────
-   Spawns the worker, tracks message IDs to discard stale keystroke results,
-   and handles status changes.
+   SECTION 1 — SETTINGS STATE  (settings + localStorage hydration)
 ════════════════════════════════════════════════════════════════════════ */
 
-const worker = new Worker('worker.js?v=3');
-let latestId = 0;
-let workerReady = false;
+const settings = {
+  showApprox:  false,
+  assumeReal:  false,
+  useDegrees:  false,
+  precision:   10
+};
 
 /**
- * sendToWorker
- * Called on every debounced keystroke with the current LaTeX string.
+ * Persist a key to localStorage safely.
  */
-function sendToWorker(latex) {
-  if (!workerReady) return;
-  const id = ++latestId;
-  worker.postMessage({ id, latexInput: latex });
+function _lsSave(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch(_) {}
 }
 
-// Listen for results from worker.js
-worker.onmessage = ({ data }) => {
-  if (data.status === "progress") {
-    setWorkerStatus('loading');
-    workerLabel.textContent = data.step;
-    return;
-  }
-
-  // Boot signal — worker finished loading Pyodide + SymPy.
-  if (data.status === "ready") {
-    workerReady = true;
-    setWorkerStatus('ready');
-    // If there is already text in the input when ready, evaluate it
-    if (input.value.trim()) {
-      sendToWorker(input.value);
-    }
-    return;
-  }
-
-  if (data.status === "init_error") {
-    setWorkerStatus('error');
-    _showError("Initialization failed: " + data.error);
-    return;
-  }
-
-  // Discard responses that belong to a previous keystroke.
-  if (data.id !== latestId) return;
-
-  if (data.status === "success") {
-    _renderKatex(data.result);
-  } else if (data.status === "incomplete") {
-    // User is still typing — keep the last valid render, show nothing new.
-  } else if (data.status === "error") {
-    _showError(data.error ?? 'Evaluation error');
-  }
-};
-
-worker.onerror = (e) => {
-  console.error("[worker] Uncaught error:", e);
-  setWorkerStatus('error');
-  _showError("Worker error occurred.");
-};
-
 /**
- * setWorkerStatus
- * Updates the status badge in the corner.
- *
- * @param {'loading'|'ready'|'error'} state
+ * Load a key from localStorage safely. Returns `fallback` on miss/error.
  */
+function _lsLoad(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw !== null ? JSON.parse(raw) : fallback;
+  } catch(_) { return fallback; }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   SECTION 2 — THEME
+════════════════════════════════════════════════════════════════════════ */
+let currentTheme = 'dark';
+
+function _applyTheme(theme) {
+  if (theme === true) theme = 'dark'; // migration
+  if (theme === false) theme = 'light';
+  currentTheme = theme;
+  document.documentElement.setAttribute('data-theme', theme);
+  if (themeBtn) {
+    themeBtn.textContent = theme.charAt(0).toUpperCase() + theme.slice(1);
+  }
+  _lsSave(LS.THEME, theme);
+}
+
+if (themeBtn) {
+  themeBtn.addEventListener('click', () => {
+    _applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+  });
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════
+   SECTION 3 — COMMAND PALETTE
+════════════════════════════════════════════════════════════════════════ */
+
+const cmdOverlay = document.getElementById('cmd-overlay');
+const cmdInput   = document.getElementById('cmd-input');
+const cmdResults = document.getElementById('cmd-results');
+let _cmdOpen = false;
+let _cmdSelectedIndex = -1;
+let _cmdItems = [];
+let _cmdSavedFocus = null;
+let _cmdCurrentMenu = 'root';
+
+function _openPalette() {
+  _cmdSavedFocus = document.activeElement;
+  _cmdOpen = true;
+  _cmdCurrentMenu = 'root';
+  cmdOverlay.classList.add('open');
+  cmdOverlay.setAttribute('aria-hidden', 'false');
+  cmdInput.value = '';
+  _renderCmdResults();
+  setTimeout(() => cmdInput.focus(), 50); // wait for transition
+}
+
+function _closePalette() {
+  _cmdOpen = false;
+  cmdOverlay.classList.remove('open');
+  cmdOverlay.setAttribute('aria-hidden', 'true');
+  cmdInput.blur();
+  if (_cmdSavedFocus) {
+    _cmdSavedFocus.focus();
+    _cmdSavedFocus = null;
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    _cmdOpen ? _closePalette() : _openPalette();
+  }
+  if (e.key === 'Escape' && _cmdOpen) {
+    e.preventDefault();
+    _closePalette();
+  }
+});
+
+cmdOverlay.addEventListener('mousedown', (e) => {
+  if (e.target === cmdOverlay) _closePalette();
+});
+
+cmdInput.addEventListener('input', _renderCmdResults);
+cmdInput.addEventListener('keydown', (e) => {
+  if (!_cmdOpen) return;
+  if (e.key === 'Backspace' && cmdInput.value === '' && _cmdCurrentMenu !== 'root') {
+    e.preventDefault();
+    _cmdCurrentMenu = 'root';
+    _renderCmdResults();
+    return;
+  }
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    _cmdSelectedIndex = Math.min(_cmdSelectedIndex + 1, _cmdItems.length - 1);
+    _drawCmdSelection();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    _cmdSelectedIndex = Math.max(_cmdSelectedIndex - 1, 0);
+    _drawCmdSelection();
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (_cmdSelectedIndex >= 0 && _cmdSelectedIndex < _cmdItems.length) {
+      _executeCmd(_cmdItems[_cmdSelectedIndex]);
+    }
+  }
+});
+
+function _renderCmdResults() {
+  const query = cmdInput.value.toLowerCase().trim();
+  _cmdItems = [];
+
+  if (_cmdCurrentMenu === 'root') {
+    cmdInput.placeholder = "Search commands or equations...";
+    const rootCmds = [
+      { type: 'menu', id: 'themes', label: 'Themes...', keywords: 'theme color dark light' },
+      { type: 'menu', id: 'settings', label: 'Settings...', keywords: 'settings approx assume angle precision' },
+      { type: 'cmd', label: `Clear Notebook`, keywords: 'clear notebook empty delete' }
+    ];
+    rootCmds.forEach(cmd => {
+      if (!query || cmd.label.toLowerCase().includes(query) || cmd.keywords.includes(query)) _cmdItems.push(cmd);
+    });
+    blocks.forEach(b => {
+      if (b.latex && b.latex.trim().length > 0) {
+        if (!query || b.latex.toLowerCase().includes(query)) {
+          _cmdItems.push({ type: 'block', id: b.id, label: b.latex });
+        }
+      }
+    });
+  } else if (_cmdCurrentMenu === 'themes') {
+    cmdInput.placeholder = "Search themes...";
+    _cmdItems.push({ type: 'back', label: '< Back to Main Menu', keywords: '' });
+    const themes = [
+      { type: 'cmd', label: 'Theme: Dark', keywords: 'dark' },
+      { type: 'cmd', label: 'Theme: Light', keywords: 'light' },
+      { type: 'cmd', label: 'Theme: Dracula', keywords: 'dracula' },
+      { type: 'cmd', label: 'Theme: Gruvbox', keywords: 'gruvbox' },
+      { type: 'cmd', label: 'Theme: Nord', keywords: 'nord' },
+      { type: 'cmd', label: 'Theme: Matrix', keywords: 'matrix hacker' }
+    ];
+    themes.forEach(cmd => {
+      if (!query || cmd.label.toLowerCase().includes(query) || cmd.keywords.includes(query)) _cmdItems.push(cmd);
+    });
+  } else if (_cmdCurrentMenu === 'settings') {
+    cmdInput.placeholder = "Search settings...";
+    _cmdItems.push({ type: 'back', label: '< Back to Main Menu', keywords: '' });
+    const settingsCmds = [
+      { type: 'cmd', label: `Settings: Show Approximations (${settings.showApprox ? 'ON' : 'OFF'})`, keywords: 'approx decimal setting' },
+      { type: 'cmd', label: `Settings: Assume Real Variables (${settings.assumeReal ? 'ON' : 'OFF'})`, keywords: 'assume real variables setting' },
+      { type: 'cmd', label: `Settings: Toggle Angles (${settings.useDegrees ? 'Degrees' : 'Radians'})`, keywords: 'angle degree radian setting' },
+      { type: 'cmd', label: `Settings: Set Precision: 10`, keywords: 'precision decimals' }
+    ];
+    settingsCmds.forEach(cmd => {
+      if (!query || cmd.label.toLowerCase().includes(query) || cmd.keywords.includes(query)) _cmdItems.push(cmd);
+    });
+  }
+
+  _cmdSelectedIndex = _cmdItems.length > 0 ? 0 : -1;
+  
+  cmdResults.innerHTML = '';
+  _cmdItems.forEach((item, index) => {
+    const li = document.createElement('li');
+    li.className = 'cmd-item';
+    
+    const textSpan = document.createElement('span');
+    // truncate overly long latex
+    let disp = item.label;
+    if (disp.length > 60) disp = disp.substring(0, 58) + '...';
+    textSpan.textContent = disp;
+    li.appendChild(textSpan);
+
+    const descSpan = document.createElement('span');
+    descSpan.className = 'cmd-item-desc';
+    descSpan.textContent = item.type === 'menu' ? 'Menu' : item.type === 'back' ? 'Back' : item.type === 'cmd' ? 'Command' : 'Equation';
+    li.appendChild(descSpan);
+
+    li.addEventListener('mousedown', (e) => {
+      e.preventDefault(); // keep focus on input
+      _executeCmd(item);
+    });
+    
+    li.addEventListener('mouseenter', () => {
+      _cmdSelectedIndex = index;
+      _drawCmdSelection();
+    });
+
+    cmdResults.appendChild(li);
+  });
+  
+  _drawCmdSelection();
+}
+
+function _drawCmdSelection() {
+  const items = cmdResults.querySelectorAll('.cmd-item');
+  items.forEach((el, idx) => {
+    if (idx === _cmdSelectedIndex) {
+      el.classList.add('selected');
+      el.scrollIntoView({ block: 'nearest' });
+    } else {
+      el.classList.remove('selected');
+    }
+  });
+}
+
+function _executeCmd(item) {
+  if (item.type === 'menu') {
+    _cmdCurrentMenu = item.id;
+    cmdInput.value = '';
+    _renderCmdResults();
+    return;
+  } else if (item.type === 'back') {
+    _cmdCurrentMenu = 'root';
+    cmdInput.value = '';
+    _renderCmdResults();
+    return;
+  }
+  
+  _closePalette();
+  if (item.type === 'cmd') {
+    if (item.label.includes('Theme:')) {
+      const theme = item.label.split('Theme: ')[1].toLowerCase();
+      _applyTheme(theme);
+    } else if (item.label.includes('Approx')) {
+      settings.showApprox = !settings.showApprox;
+      _lsSave(LS.SHOW_APPROX, settings.showApprox);
+      if (!settings.showApprox) {
+        blocks.forEach(b => _hideApprox(b.id));
+      } else {
+        blocks.forEach(b => { if (b.approx) _renderApprox(b.id, b.approx); });
+      }
+    } else if (item.label.includes('Assume')) {
+      settings.assumeReal = !settings.assumeReal;
+      _lsSave(LS.ASSUME_REAL, settings.assumeReal);
+      if (readyCount === WORKER_COUNT) {
+        blocks.forEach(b => { if (b.latex.trim()) sendToWorker(b.id, b.latex); });
+      }
+    } else if (item.label.includes('Toggle Angles')) {
+      settings.useDegrees = !settings.useDegrees;
+      _lsSave(LS.USE_DEGREES, settings.useDegrees);
+      if (readyCount === WORKER_COUNT) {
+        blocks.forEach(b => { if (b.latex.trim()) sendToWorker(b.id, b.latex); });
+      }
+    } else if (item.label.includes('Set Precision: 10')) {
+      settings.precision = 10;
+      _lsSave(LS.PRECISION, settings.precision);
+      if (readyCount === WORKER_COUNT) {
+        blocks.forEach(b => { if (b.latex.trim()) sendToWorker(b.id, b.latex); });
+      }
+    } else if (item.label.includes('Clear Notebook')) {
+      blocks.slice().forEach(b => {
+        const el = document.getElementById(`block-${b.id}`);
+        if (el) el.remove();
+      });
+      blocks = [];
+      _saveNotebook();
+      _createBlock('', null, true);
+    }
+  } else if (item.type === 'block') {
+    const ta = document.getElementById(`in-${item.id}`);
+    if (ta) {
+      ta.focus();
+      const el = document.getElementById(`block-${item.id}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   SECTION 4 — NOTEBOOK STATE
+════════════════════════════════════════════════════════════════════════ */
+
+// Array of blocks: { id, latex, approx }
+let blocks = [];
+let activeBlockId = null;
+
+function _saveNotebook() {
+  // Save only ID, latex, and approx (if any) to avoid saving large DOM/status states
+  const data = blocks.map(b => ({
+    id: b.id,
+    latex: b.latex,
+    approx: b.approx || null
+  }));
+  _lsSave(LS.INPUT, data);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   SECTION 5 — WORKER THREAD POOL & ROUTING
+════════════════════════════════════════════════════════════════════════ */
+
+const WORKER_COUNT = 2;
+const workers = [];
+let readyCount = 0;
+let requestSequence = 0;
+
+// Queue for pending requests when all workers are busy
+// Maps blockId -> { latex, sequenceId }
+const pendingQueue = new Map();
+
+for (let i = 0; i < WORKER_COUNT; i++) {
+  const w = new Worker('worker.js?v=4');
+  workers.push({ worker: w, idle: true });
+
+  w.onmessage = ({ data }) => {
+    if (data.status === 'progress') {
+      if (i === 0) { // Only show progress for the first worker
+        setWorkerStatus('loading');
+        workerLabel.textContent = data.step;
+      }
+      return;
+    }
+
+    if (data.status === 'ready') {
+      readyCount++;
+      if (readyCount === WORKER_COUNT) {
+        setWorkerStatus('ready');
+        // Initial boot eval:
+        blocks.forEach(b => { if (b.latex.trim()) sendToWorker(b.id, b.latex); });
+      }
+      return;
+    }
+
+    if (data.status === 'init_error') {
+      setWorkerStatus('error');
+      return;
+    }
+
+    workers[i].idle = true;
+
+    // Discard stale responses
+    const block = blocks.find(b => b.id === data.blockId);
+    if (block && data.id === block.latestSeq) {
+      _handleWorkerResponse(block, data);
+    }
+
+    _processQueue();
+  };
+
+  w.onerror = (e) => {
+    console.error(`[worker ${i}] Uncaught error:`, e);
+    workers[i].idle = true;
+    setWorkerStatus('error');
+    _processQueue();
+  };
+}
+
+function _processQueue() {
+  const idleWorker = workers.find(w => w.idle);
+  if (!idleWorker) return;
+  if (pendingQueue.size === 0) return;
+
+  const [blockId, req] = pendingQueue.entries().next().value;
+  pendingQueue.delete(blockId);
+
+  idleWorker.idle = false;
+  idleWorker.worker.postMessage({
+    id: req.sequenceId,
+    blockId: blockId,
+    latexInput: req.latex,
+    settings: { assumeReal: settings.assumeReal }
+  });
+}
+
+function sendToWorker(blockId, latex) {
+  const block = blocks.find(b => b.id === blockId);
+  if (!block) return;
+
+  requestSequence++;
+  block.latestSeq = requestSequence;
+
+  if (readyCount < WORKER_COUNT) {
+    pendingQueue.set(blockId, { latex, sequenceId: requestSequence });
+    return;
+  }
+
+  const idleWorker = workers.find(w => w.idle);
+  if (idleWorker) {
+    idleWorker.idle = false;
+    idleWorker.worker.postMessage({
+      id: requestSequence,
+      blockId: blockId,
+      latexInput: latex,
+      settings: { assumeReal: settings.assumeReal, useDegrees: settings.useDegrees, precision: settings.precision }
+    });
+  } else {
+    pendingQueue.set(blockId, { latex, sequenceId: requestSequence });
+  }
+}
+
 function setWorkerStatus(state) {
   workerBadge.setAttribute('data-state', state);
   workerLabel.textContent = state;
 }
 
+function _handleWorkerResponse(block, data) {
+  if (data.status === 'success') {
+    _clearErrorGlow();
+    _renderKatex(block.id, data.result);
+    if (data.approx) {
+      block.approx = data.approx;
+      if (settings.showApprox) _renderApprox(block.id, data.approx);
+    } else {
+      block.approx = null;
+      _hideApprox(block.id);
+    }
+  } else if (data.status === 'incomplete') {
+    _scheduleErrorGlow();
+    _hideApprox(block.id);
+  } else if (data.status === 'error') {
+    _clearErrorGlow();
+    _showError(block.id, data.error ?? 'Evaluation error');
+    _hideApprox(block.id);
+  }
+}
 
 
 /* ════════════════════════════════════════════════════════════════════════
-   SECTION 3 — KATEX RENDERING
+   SECTION 6 — SYNTAX ERROR GLOW
 ════════════════════════════════════════════════════════════════════════ */
 
-function _renderKatex(latex) {
+let _errGlowTimer = null;
+let _errGlowing   = false;
+
+function _scheduleErrorGlow() {
+  if (_errGlowing) return;
+  clearTimeout(_errGlowTimer);
+  _errGlowTimer = setTimeout(_applyErrorGlow, ERR_GLOW_MS);
+}
+
+function _applyErrorGlow() {
+  _errGlowing = true;
+  caret.style.background  = 'var(--caret-err)';
+  caret.style.boxShadow   = '0 0 8px var(--caret-err-glow), 0 0 22px var(--caret-err-glow)';
+}
+
+function _clearErrorGlow() {
+  clearTimeout(_errGlowTimer);
+  _errGlowing = false;
+  caret.style.background  = '';
+  caret.style.boxShadow   = '';
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════
+   SECTION 7 — RENDERING
+════════════════════════════════════════════════════════════════════════ */
+
+function _renderKatex(blockId, latex) {
+  const katexOut = document.getElementById(`out-${blockId}`);
+  if (!katexOut) return;
   katex.render(latex, katexOut, {
     displayMode:  true,
     throwOnError: false,
     output:       'html',
     trust:        false,
   });
-  _fitOutput();
+  _fitOutput(blockId);
 }
 
-function _showHint() {
-  katexOut.innerHTML = '<span id="output-hint">result appears here</span>';
+function _renderApprox(blockId, approxLatex) {
+  const approxOut = document.getElementById(`approx-${blockId}`);
+  if (!approxOut) return;
+  try {
+    katex.render('\\approx ' + approxLatex, approxOut, {
+      displayMode:  false,
+      throwOnError: false,
+      output:       'html',
+      trust:        false,
+    });
+    approxOut.classList.add('visible');
+  } catch(_) {
+    approxOut.classList.remove('visible');
+  }
+}
+
+function _hideApprox(blockId) {
+  const approxOut = document.getElementById(`approx-${blockId}`);
+  if (approxOut) approxOut.classList.remove('visible');
+}
+
+function _showHint(blockId) {
+  const katexOut = document.getElementById(`out-${blockId}`);
+  const outputScale = document.getElementById(`scale-out-${blockId}`);
+  if (!katexOut || !outputScale) return;
+  katexOut.innerHTML = '<span class="output-hint">result appears here</span>';
   outputScale.style.transform = '';
+  _hideApprox(blockId);
 }
 
-function _showError(msg) {
-  katexOut.innerHTML =
-    `<span style="font-family:var(--mono);font-size:0.82em;color:var(--err);">`
-    + _esc(msg)
-    + `</span>`;
+function _showError(blockId, msg) {
+  const katexOut = document.getElementById(`out-${blockId}`);
+  const outputScale = document.getElementById(`scale-out-${blockId}`);
+  if (!katexOut || !outputScale) return;
+  katexOut.innerHTML = `<span style="font-family:var(--mono);font-size:0.82em;color:var(--err);">${_esc(msg)}</span>`;
   outputScale.style.transform = '';
 }
 
@@ -514,211 +1103,368 @@ function _esc(s) {
 
 
 /* ════════════════════════════════════════════════════════════════════════
-   SECTION 4 — MIRROR SYNC
-   Copies computed font styles from the textarea to the mirror div so that
-   character-level measurements in the mirror match the textarea exactly.
+   SECTION 8 — BLOCK MANAGEMENT (NOTEBOOK DOM)
 ════════════════════════════════════════════════════════════════════════ */
 
-function _syncMirror() {
-  const cs = getComputedStyle(input);
-  MIRROR_PROPS.forEach(p => { mirror.style[p] = cs[p]; });
+function _generateId() {
+  return Math.random().toString(36).substring(2, 9);
 }
 
-/** Escape text content for mirror innerHTML — preserves whitespace. */
-function _mirrorEsc(str) {
-  return str
-    .replace(/&/g,  '&amp;')
-    .replace(/</g,  '&lt;')
-    .replace(/>/g,  '&gt;')
-    .replace(/ /g,  '&nbsp;')
-    .replace(/\n/g, '<br>');
+function _createBlock(initialLatex = '', approx = null, focusAfter = false) {
+  const blockId = _generateId();
+  const block = { id: blockId, latex: initialLatex, approx: approx, latestSeq: 0 };
+  blocks.push(block);
+
+  const container = document.getElementById('blocks-container');
+  const el = document.createElement('div');
+  el.className = 'block';
+  el.id = `block-${blockId}`;
+  
+  el.innerHTML = `
+    <section class="pane pane-input" aria-label="LaTeX input">
+      <div class="scale-wrapper" id="scale-in-${blockId}">
+        <textarea
+          id="in-${blockId}"
+          class="latex-input"
+          rows="1"
+          wrap="off"
+          spellcheck="false"
+          autocorrect="off"
+          autocomplete="off"
+          autocapitalize="off"
+          aria-label="Type a LaTeX expression"
+          placeholder="\\int_{0}^{1} x^2 \\, dx"
+        ></textarea>
+      </div>
+    </section>
+    <section class="pane pane-output" aria-label="Rendered result">
+      <div class="scale-wrapper" id="scale-out-${blockId}">
+        <div id="out-${blockId}" class="katex-output" role="math" aria-live="polite">
+          <span class="output-hint">result appears here</span>
+        </div>
+      </div>
+      <div id="approx-${blockId}" class="approx-output" aria-live="polite"></div>
+    </section>
+  `;
+  container.appendChild(el);
+
+  const ta = document.getElementById(`in-${blockId}`);
+  ta.value = initialLatex;
+
+  _bindBlockEvents(blockId, ta);
+  
+  // Observe for resizing
+  _ro.observe(el.querySelector('.pane-input'));
+  _ro.observe(el.querySelector('.pane-output'));
+
+  _resizeHeight(ta);
+  _fitInput(blockId);
+  
+  if (focusAfter) {
+    ta.focus();
+    // Scroll smoothly to the new block
+    ta.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  return blockId;
+}
+
+function _deleteBlock(blockId) {
+  const index = blocks.findIndex(b => b.id === blockId);
+  if (index === -1) return;
+
+  // If it's the only block, just clear its value instead of deleting
+  if (blocks.length === 1) {
+    const ta = document.getElementById(`in-${blockId}`);
+    if (ta) {
+      ta.value = '';
+      ta.dispatchEvent(new Event('input'));
+      ta.focus();
+    }
+    return;
+  }
+
+  // Remove from DOM
+  const el = document.getElementById(`block-${blockId}`);
+  if (el) el.remove();
+
+  // Remove from state
+  blocks.splice(index, 1);
+  _saveNotebook();
+  
+  // Clean up debounce map
+  clearTimeout(_debounceMap.get(blockId));
+  _debounceMap.delete(blockId);
+
+  // Shift focus to the previous block (or next if it was the first)
+  const newFocusIndex = index > 0 ? index - 1 : 0;
+  const newFocusId = blocks[newFocusIndex].id;
+  const newTa = document.getElementById(`in-${newFocusId}`);
+  if (newTa) {
+    newTa.focus();
+    newTa.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } else {
+    activeBlockId = null;
+    caret.style.opacity = '0';
+  }
+}
+
+let _debounceMap = new Map();
+
+function _bindBlockEvents(blockId, ta) {
+  ta.addEventListener('input', () => {
+    _clearErrorGlow();
+    _resizeHeight(ta);
+    _fitInput(blockId);
+    _updateCaret();
+
+    const block = blocks.find(b => b.id === blockId);
+    if (block) block.latex = ta.value;
+    _saveNotebook();
+
+    if (!ta.value.trim()) {
+      _showHint(blockId);
+      clearTimeout(_debounceMap.get(blockId));
+      return;
+    }
+
+    clearTimeout(_debounceMap.get(blockId));
+    _debounceMap.set(blockId, setTimeout(() => sendToWorker(blockId, ta.value), DEBOUNCE_MS));
+  });
+
+  ['keyup', 'keydown', 'click', 'select'].forEach(evt =>
+    ta.addEventListener(evt, (e) => {
+      // Shift+Enter mechanic
+      if (evt === 'keydown' && e.key === 'Enter' && e.shiftKey) {
+        e.preventDefault();
+        ta.blur();
+        _createBlock('', null, true);
+        return;
+      }
+      
+      // Shift+Backspace mechanic
+      if (evt === 'keydown' && (e.key === 'Backspace' || e.key === 'Delete') && e.shiftKey) {
+        e.preventDefault();
+        ta.blur();
+        _deleteBlock(blockId);
+        return;
+      }
+
+      _updateCaret();
+    })
+  );
+
+  ta.addEventListener('focus', () => {
+    activeBlockId = blockId;
+    caret.style.opacity = '1';
+    _updateCaret();
+  });
+
+  ta.addEventListener('blur', () => {
+    if (activeBlockId === blockId) {
+      activeBlockId = null;
+      caret.style.opacity = '0';
+    }
+  });
+}
+
+function _resizeHeight(ta) {
+  ta.style.height = 'auto';
+  ta.style.height = ta.scrollHeight + 'px';
 }
 
 
 /* ════════════════════════════════════════════════════════════════════════
-   SECTION 5 — TEXTAREA AUTO-HEIGHT
-   The textarea grows vertically to fit multiple lines (if user presses ↵).
+   SECTION 9 — SHRINK-TO-FIT
 ════════════════════════════════════════════════════════════════════════ */
 
-function _resizeHeight() {
-  input.style.height = 'auto';
-  input.style.height = input.scrollHeight + 'px';
-}
+function _fitInput(blockId) {
+  const ta = document.getElementById(`in-${blockId}`);
+  const scaleWrapper = document.getElementById(`scale-in-${blockId}`);
+  const pane = scaleWrapper?.parentElement;
+  if (!ta || !scaleWrapper || !pane) return;
 
-
-/* ════════════════════════════════════════════════════════════════════════
-   SECTION 6 — SHRINK-TO-FIT: INPUT
-   ──────────────────────────────────────────────────────────────────────
-   Algorithm:
-     1. Render full textarea text in the mirror with auto width
-        → mirror.scrollWidth == natural content width in pixels
-     2. Set textarea.width = max(MIN_W_VW * viewport, contentWidth)
-        → overflow:hidden on textarea never clips because width ≥ content
-     3. scale = min(1, paneWidth × SAFE_MARGIN / contentWidth)
-     4. Apply transform: scale(scale) to inputScale wrapper
-════════════════════════════════════════════════════════════════════════ */
-
-function _fitInput() {
-  _syncMirror();
-
-  /* Phase 1: measure natural content width via auto-width mirror */
+  _syncMirror(ta);
   mirror.style.width = 'auto';
-  mirror.innerHTML   = _mirrorEsc(input.value) || '\u00a0';
+  mirror.innerHTML   = _mirrorEsc(ta.value) || '\u00a0';
 
   const minW     = window.innerWidth * MIN_W_VW;
   const contentW = Math.max(minW, mirror.scrollWidth);
 
-  /* Phase 2: expand textarea to match content (prevents overflow clipping) */
-  input.style.width = contentW + 'px';
+  ta.style.width = contentW + 'px';
 
-  /* Phase 3 & 4: scale wrapper to keep content within SAFE_MARGIN of pane */
-  const available = paneTop.clientWidth * SAFE_MARGIN;
+  const available = pane.clientWidth * SAFE_MARGIN;
   const scale     = contentW > available ? available / contentW : 1;
-  inputScale.style.transform = scale < 1 ? `scale(${scale.toFixed(5)})` : '';
+  scaleWrapper.style.transform = scale < 1 ? `scale(${scale.toFixed(5)})` : '';
 }
 
+function _fitOutput(blockId) {
+  const katexOut = document.getElementById(`out-${blockId}`);
+  const scaleWrapper = document.getElementById(`scale-out-${blockId}`);
+  const pane = scaleWrapper?.parentElement;
+  if (!katexOut || !scaleWrapper || !pane) return;
 
-/* ════════════════════════════════════════════════════════════════════════
-   SECTION 7 — SHRINK-TO-FIT: OUTPUT
-   KaTeX renders into katexOut; we measure its scroll width and scale
-   the output-scale wrapper so it always fits within SAFE_MARGIN.
-════════════════════════════════════════════════════════════════════════ */
-
-function _fitOutput() {
   const contentW  = katexOut.scrollWidth;
-  const available = paneBottom.clientWidth * SAFE_MARGIN;
+  const available = pane.clientWidth * SAFE_MARGIN;
   const scale     = contentW > available ? available / contentW : 1;
-  outputScale.style.transform = scale < 1 ? `scale(${scale.toFixed(5)})` : '';
+  scaleWrapper.style.transform = scale < 1 ? `scale(${scale.toFixed(5)})` : '';
 }
 
-/* Re-fit both panes whenever the viewport is resized */
-const _ro = new ResizeObserver(() => { _fitInput(); _fitOutput(); });
-_ro.observe(paneTop);
-_ro.observe(paneBottom);
+const _ro = new ResizeObserver((entries) => {
+  // To avoid recalculating EVERYTHING, we could check the entries, 
+  // but let's just refit the blocks that were resized.
+  entries.forEach(entry => {
+    const pane = entry.target;
+    const isInput = pane.classList.contains('pane-input');
+    const blockEl = pane.closest('.block');
+    if (!blockEl) return;
+    const blockId = blockEl.id.replace('block-', '');
+    if (isInput) _fitInput(blockId);
+    else _fitOutput(blockId);
+  });
+});
 
 
 /* ════════════════════════════════════════════════════════════════════════
-   SECTION 8 — CUSTOM CARET
-   ──────────────────────────────────────────────────────────────────────
-   Position algorithm:
-     1. Sync mirror styles to textarea
-     2. Set mirror width = textarea's current natural offsetWidth
-        (same text flow as the textarea → correct multi-line positions)
-     3. Render text[0 .. selectionStart] + sentinel <span> into mirror
-     4. Sentinel's BoundingClientRect gives the character position
-        in the mirror's natural (unscaled) coordinate space:
-          natX = sentinel.left − mirror.left   (horizontal char offset)
-          natY = sentinel.top  − mirror.top    (vertical line offset)
-     5. Get scale factor from inputScale's computed transform matrix
-     6. Get textarea's VISUAL bounding rect (getBoundingClientRect()
-        returns post-transform, visual-space coordinates)
-     7. Caret visual position:
-          cx = tRect.left + natX × scale
-          cy = tRect.top  + natY × scale  + vertical centering
+   SECTION 10 — MIRROR SYNC & CUSTOM CARET
 ════════════════════════════════════════════════════════════════════════ */
+
+function _syncMirror(ta) {
+  const cs = getComputedStyle(ta);
+  MIRROR_PROPS.forEach(p => { mirror.style[p] = cs[p]; });
+}
+
+function _mirrorEsc(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/ /g, '&nbsp;').replace(/\n/g, '<br>');
+}
 
 function _updateCaret() {
-  if (document.activeElement !== input) {
+  if (!activeBlockId) {
+    caret.style.opacity = '0';
+    return;
+  }
+  
+  const ta = document.getElementById(`in-${activeBlockId}`);
+  const scaleWrapper = document.getElementById(`scale-in-${activeBlockId}`);
+  if (!ta || document.activeElement !== ta) {
     caret.style.opacity = '0';
     return;
   }
 
-  _syncMirror();
+  _syncMirror(ta);
 
-  const sel   = input.selectionStart ?? 0;
-  const pre   = _mirrorEsc(input.value.slice(0, sel));
-  const post  = _mirrorEsc(input.value.slice(sel));
+  const sel   = ta.selectionStart ?? 0;
+  const pre   = _mirrorEsc(ta.value.slice(0, sel));
+  const post  = _mirrorEsc(ta.value.slice(sel));
 
-  /* Set mirror width = textarea's natural (unscaled) width for identical text flow */
-  mirror.style.width = input.offsetWidth + 'px';
-
-  /* Zero-width space sentinel marks the caret position. Include 'post' so text-align: center works! */
-  mirror.innerHTML = pre + '<span id="csent">\u200b</span>' + post;
+  mirror.style.width = ta.offsetWidth + 'px';
+  mirror.innerHTML   = pre + '<span id="csent">\u200b</span>' + post;
 
   const sentinel = document.getElementById('csent');
   if (!sentinel) { caret.style.opacity = '0'; return; }
 
   const sRect = sentinel.getBoundingClientRect();
   const mRect = mirror.getBoundingClientRect();
-  const tRect = input.getBoundingClientRect();   // VISUAL rect (post-transform)
+  const tRect = ta.getBoundingClientRect();
 
-  /* Natural character offsets within textarea */
   const natX = sRect.left - mRect.left;
   const natY = sRect.top  - mRect.top;
 
-  /* Extract the current scale factor from the wrapper's CSS transform matrix */
-  const matrix = new DOMMatrix(getComputedStyle(inputScale).transform);
+  const matrix = new DOMMatrix(getComputedStyle(scaleWrapper).transform);
   const scale  = matrix.a || 1;
 
-  /* Caret dimensions — proportional to the textarea's visual font size */
-  const fs      = parseFloat(getComputedStyle(input).fontSize) * scale;
-  const lineH   = sRect.height * scale;
-  const caretH  = fs * 1.20;
+  const fs     = parseFloat(getComputedStyle(ta).fontSize) * scale;
+  const lineH  = sRect.height * scale;
+  const caretH = fs * 1.20;
 
-  /* Final visual position */
   const cx = tRect.left + natX * scale;
   const cy = tRect.top  + natY * scale + (lineH - caretH) / 2;
 
-  caret.style.left   = cx + 'px';
-  caret.style.top    = cy + 'px';
-  caret.style.height = caretH + 'px';
-  caret.style.opacity = '1';  // animation controls blink, this enables it
+  caret.style.left    = cx + 'px';
+  caret.style.top     = cy + 'px';
+  caret.style.height  = caretH + 'px';
+  caret.style.opacity = '1';
 }
+
+document.addEventListener('selectionchange', _updateCaret);
+window.addEventListener('scroll', _updateCaret, { passive: true });
+document.getElementById('app').addEventListener('scroll', _updateCaret, { passive: true });
 
 
 /* ════════════════════════════════════════════════════════════════════════
-   SECTION 9 — EVENT WIRING
+   SECTION 11 — INIT (LOCALSTORAGE HYDRATION)
 ════════════════════════════════════════════════════════════════════════ */
 
-let _debounce = null;
+/* ════════════════════════════════════════════════════════════════════════
+   SECTION 9 — SCROLL SNAPPING
+════════════════════════════════════════════════════════════════════════ */
+let _scrollTimeout;
+let _isSnapping = false;
 
-/* Input: resize, fit, move caret, debounce worker call */
-input.addEventListener('input', () => {
-  _resizeHeight();
-  _fitInput();
-  _updateCaret();
-
-  if (!input.value.trim()) {
-    _showHint();
-    clearTimeout(_debounce);
+document.getElementById('app').addEventListener('scroll', () => {
+  if (_isSnapping) {
+    clearTimeout(_scrollTimeout);
+    _scrollTimeout = setTimeout(() => { _isSnapping = false; }, 100);
     return;
   }
 
-  clearTimeout(_debounce);
-  _debounce = setTimeout(() => sendToWorker(input.value), DEBOUNCE_MS);
-});
+  clearTimeout(_scrollTimeout);
+  _scrollTimeout = setTimeout(() => {
+    let nearestBlock = null;
+    let minDistance = Infinity;
+    const windowCenter = window.innerHeight / 2;
 
-/* Caret: update on all cursor-movement events */
-['keyup', 'keydown', 'click', 'select'].forEach(evt =>
-  input.addEventListener(evt, _updateCaret)
-);
+    document.querySelectorAll('.block').forEach(el => {
+      const rect = el.getBoundingClientRect();
+      const elCenter = rect.top + rect.height / 2;
+      const distance = Math.abs(elCenter - windowCenter);
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestBlock = el;
+      }
+    });
 
-/* selectionchange fires on document, not on individual elements */
-document.addEventListener('selectionchange', () => {
-  if (document.activeElement === input) _updateCaret();
-});
+    if (nearestBlock && minDistance > 5) {
+      _isSnapping = true;
+      nearestBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => { _isSnapping = false; }, 1000);
+    }
+  }, 500);
+}, { passive: true });
 
-input.addEventListener('focus', () => {
-  caret.style.opacity = '1';
-  _updateCaret();
-});
-
-input.addEventListener('blur', () => {
-  caret.style.opacity = '0';
-});
-
-
-/* ════════════════════════════════════════════════════════════════════════
-   SECTION 10 — INIT
-════════════════════════════════════════════════════════════════════════ */
 
 (function init() {
-  _syncMirror();
-  _resizeHeight();
-  _fitInput();
+  const savedTheme = _lsLoad(LS.THEME, 'dark');
+  _applyTheme(savedTheme);
+
+  settings.showApprox = _lsLoad(LS.SHOW_APPROX, false);
+  settings.assumeReal = _lsLoad(LS.ASSUME_REAL, false);
+  settings.useDegrees = _lsLoad(LS.USE_DEGREES, false);
+  settings.precision  = _lsLoad(LS.PRECISION, 10);
+
+  // Load Notebook array
+  let savedNotebook = _lsLoad(LS.INPUT, null);
+  
+  if (Array.isArray(savedNotebook) && savedNotebook.length > 0) {
+    savedNotebook.forEach(b => {
+      _createBlock(b.latex || '', b.approx || null, false);
+    });
+  } else if (typeof savedNotebook === 'string' && savedNotebook.length > 0) {
+    // Migration path from single-string MVP
+    _createBlock(savedNotebook, null, false);
+  } else {
+    // Brand new session
+    _createBlock('', null, false);
+  }
+
   setWorkerStatus('loading');
-  input.focus();
+  
+  // Focus the last block by default
+  const lastId = blocks[blocks.length - 1].id;
+  const lastTa = document.getElementById(`in-${lastId}`);
+  if (lastTa) lastTa.focus();
 })();
+
 </script>
 </body>
 </html>

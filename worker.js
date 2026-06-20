@@ -5,19 +5,27 @@
  *
  * This worker:
  *  1. Boots Pyodide and loads the Python backend (latex_calculator.py).
- *  2. Listens for { id, latexInput } messages from the main thread.
- *  3. Calls evaluate_latex() synchronously inside Python and posts back
- *     { id, status, result? | error? } to the main thread.
+ *  2. Listens for { id, latexInput, settings? } messages from the main thread.
+ *  3. Calls evaluate_latex(latexInput, settingsJson) synchronously inside
+ *     Python and posts back { id, status, result?, approx?, error? }.
  *
- * The `id` field lets the main thread discard stale responses when the
- * user types faster than Pyodide can evaluate.
+ * The `id` field lets the main thread discard stale responses when the user
+ * types faster than Pyodide can evaluate.
+ *
+ * The `settings` field is a plain JS object forwarded from the frontend's
+ * settings state.  It is JSON-serialised before being handed to Python so
+ * that it crosses the JS→Pyodide boundary without requiring pyodide.toPy().
+ * Currently recognised Python-side keys:
+ *   assumeReal     {boolean}  — treat free variables as real numbers
+ *   assumePositive {boolean}  — treat free variables as strictly positive
+ *   assumeInteger  {boolean}  — treat free variables as integers
  */
 
 // ── 1. Load Pyodide ─────────────────────────────────────────────────────────
 importScripts("https://cdn.jsdelivr.net/pyodide/v0.26.0/full/pyodide.js");
 
-let pyodide   = null;
-let isReady   = false;
+let pyodide = null;
+let isReady = false;
 
 async function init() {
   self.postMessage({ status: "progress", step: "Loading Pyodide engine..." });
@@ -41,8 +49,7 @@ async function init() {
   self.postMessage({ status: "ready" });
 }
 
-// Kick off initialisation immediately — the main thread should wait for
-// the first { status: "ready" } message before sending any requests.
+// Kick off initialisation immediately.
 init().catch(err => {
   self.postMessage({ status: "init_error", error: String(err) });
 });
@@ -50,20 +57,36 @@ init().catch(err => {
 
 // ── 2. Message handler ───────────────────────────────────────────────────────
 self.onmessage = async ({ data }) => {
-  const { id, latexInput } = data;
+  const { id, blockId, latexInput, settings } = data;
 
   if (!isReady) {
-    self.postMessage({ id, status: "incomplete", error: "Worker not ready yet." });
+    self.postMessage({ id, blockId, status: "incomplete", error: "Worker not ready yet." });
     return;
   }
 
+  // Serialise the settings object to JSON so it can cross the JS→Python
+  // boundary cleanly without requiring pyodide.toPy() magic.
+  // Defaults to '{}' if the main thread sends no settings.
+  let settingsJson = "{}";
   try {
-    // Call the Python function — it always returns a JSON string, never throws.
-    const jsonStr  = pyodide.globals.get("evaluate_latex")(latexInput);
+    settingsJson = JSON.stringify(settings || {});
+  } catch (_) {
+    settingsJson = "{}";
+  }
+
+  try {
+    // evaluate_latex always returns a JSON string and never throws.
+    const evaluate = pyodide.globals.get("evaluate_latex");
+    const jsonStr  = evaluate(latexInput, settingsJson);
     const response = JSON.parse(jsonStr);
-    self.postMessage({ id, ...response });
+    self.postMessage({ id, blockId, ...response });
   } catch (err) {
-    // Safety net: should never be reached because evaluate_latex catches everything.
-    self.postMessage({ id, status: "error", error: `Worker exception: ${err.message}` });
+    // Safety net — should never be reached because evaluate_latex is defensive.
+    self.postMessage({
+      id,
+      blockId,
+      status: "error",
+      error: `Worker exception: ${err.message}`,
+    });
   }
 };
