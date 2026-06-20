@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live LaTeX Calculator</title>
+  <meta name="description" content="A live LaTeX calculator powered by Pyodide and SymPy. Type math, see results instantly." />
+
+  <!-- KaTeX -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous" />
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;1,300&family=Inter:wght@300;400&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ════════════════════════════════════════════════════════════════
+       CSS CUSTOM PROPERTIES  (dark default, light override)
+    ════════════════════════════════════════════════════════════════ */
+    :root {
+      --bg:           #0b0b0e;
+      --fg:           #dcdce8;
+      --fg-dim:       rgba(220, 220, 232, 0.20);
+      --fg-subtle:    rgba(220, 220, 232, 0.10);
+      --divider:      rgba(220, 220, 232, 0.055);
+      --caret-col:    #8b78ff;
+      --caret-glow:   rgba(139, 120, 255, 0.50);
+      --pill-bg:      rgba(255, 255, 255, 0.055);
+      --pill-border:  rgba(255, 255, 255, 0.09);
+      --err:          #ff6b6b;
+      --mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      --sans: 'Inter', system-ui, sans-serif;
+      --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    [data-theme="light"] {
+      --bg:           #f3f3f7;
+      --fg:           #18182a;
+      --fg-dim:       rgba(24, 24, 42, 0.22);
+      --fg-subtle:    rgba(24, 24, 42, 0.08);
+      --divider:      rgba(24, 24, 42, 0.07);
+      --caret-col:    #5a48f0;
+      --caret-glow:   rgba(90, 72, 240, 0.42);
+      --pill-bg:      rgba(0, 0, 0, 0.045);
+      --pill-border:  rgba(0, 0, 0, 0.09);
+      --err:          #d03030;
+    }
+
+    /* ════════════════════════════════════════════════════════════════
+       RESET & BASE
+    ════════════════════════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { font-size: 16px; }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--sans);
+      transition: background 0.4s var(--ease), color 0.4s var(--ease);
+    }
+
+    /* ════════════════════════════════════════════════════════════════
+       LAYOUT — exact 50 / 50 vertical split
+    ════════════════════════════════════════════════════════════════ */
+    #app {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    .pane {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden; /* clips any overflowing natural layout before scale kicks in */
+    }
+
+    #pane-top {
+      /* hair-line divider — barely visible, no visual "box" */
+      border-bottom: 1px solid var(--divider);
+    }
+
+    /* ════════════════════════════════════════════════════════════════
+       SCALE WRAPPER
+       JS applies transform: scale() here to shrink oversized content.
+       transform-origin: center center keeps the content centered.
+    ════════════════════════════════════════════════════════════════ */
+    .scale-wrapper {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transform-origin: center center;
+      will-change: transform;
+      transition: transform 0.13s var(--ease);
+    }
+
+    /* ════════════════════════════════════════════════════════════════
+       TEXTAREA  (LaTeX input)
+    ════════════════════════════════════════════════════════════════ */
+    #latex-input {
+      display: block;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--fg);
+      font-family: var(--mono);
+      font-size: clamp(1.05rem, 2.3vw, 1.7rem);
+      font-weight: 300;
+      line-height: 1.65;
+      letter-spacing: 0.018em;
+      resize: none;
+      /* no horizontal wrapping — content grows wider, JS scales it down */
+      white-space: pre;
+      word-break: keep-all;
+      overflow: hidden;   /* JS always sets width ≥ content width, so nothing clips */
+      /* hide the native OS caret — our custom caret replaces it */
+      caret-color: transparent;
+      padding: 0;
+      min-width: 48vw;    /* comfortable default before content grows */
+      text-align: center; /* mirror the centered output pane below */
+    }
+
+    #latex-input::placeholder {
+      color: var(--fg-dim);
+      font-style: italic;
+    }
+
+    /* ════════════════════════════════════════════════════════════════
+       MIRROR DIV — off-screen, invisible, used for two things:
+         1. Measuring the natural (unscaled) content width
+         2. Locating the cursor position for the custom caret
+    ════════════════════════════════════════════════════════════════ */
+    #mirror {
+      position: fixed;
+      top: -9999px;
+      left: -9999px;
+      visibility: hidden;
+      pointer-events: none;
+      /* font properties are synced to textarea by JS */
+      white-space: pre;
+      word-break: keep-all;
+    }
+
+    /* ════════════════════════════════════════════════════════════════
+       CUSTOM CARET
+       A glowing 2px bar that replaces the native OS text cursor.
+       Position is updated in JS via getBoundingClientRect() on
+       a sentinel <span> inside the mirror div.
+    ════════════════════════════════════════════════════════════════ */
+    #custom-caret {
+      position: fixed;
+      z-index: 9999;
+      width: 2px;
+      border-radius: 2px;
+      background: var(--caret-col);
+      box-shadow: 0 0 8px  var(--caret-glow),
+                  0 0 22px var(--caret-glow);
+      pointer-events: none;
+      opacity: 0;  /* shown only when textarea is focused */
+      /* smooth position tracking for quick typists */
+      transition: left   0.05s var(--ease),
+                  top    0.05s var(--ease),
+                  opacity 0.18s ease,
+                  background 0.35s ease,
+                  box-shadow  0.35s ease;
+      /* blink animation */
+      animation: caret-blink 1.05s ease-in-out infinite;
+    }
+
+    @keyframes caret-blink {
+      0%, 100% { opacity: 1; }
+      42%, 58% { opacity: 0; }
+    }
+
+    /* ════════════════════════════════════════════════════════════════
+       KATEX OUTPUT
+    ════════════════════════════════════════════════════════════════ */
+    #katex-output {
+      text-align: center;
+      color: var(--fg);
+      font-size: clamp(1.2rem, 3vw, 2.2rem);
+    }
+
+    /* allow KaTeX to inherit our theme colour */
+    .katex { color: inherit !important; }
+    .katex-display { margin: 0 !important; overflow: visible !important; }
+
+    #output-hint {
+      font-family: var(--mono);
+      font-size: clamp(0.72rem, 1.4vw, 0.92rem);
+      font-weight: 300;
+      letter-spacing: 0.07em;
+      color: var(--fg-dim);
+    }
+
+    /* ════════════════════════════════════════════════════════════════
+       UI CHROME — theme toggle, worker badge, corner label
+       All fixed, z-index: 500, intentionally minimal
+    ════════════════════════════════════════════════════════════════ */
+
+    /* ── Corner label (top-left) ── */
+    #corner-label {
+      position: fixed;
+      top: 1.15rem;
+      left: 1.4rem;
+      z-index: 500;
+      font-family: var(--sans);
+      font-size: 0.60rem;
+      font-weight: 400;
+      letter-spacing: 0.20em;
+      text-transform: uppercase;
+      color: var(--fg-dim);
+      user-select: none;
+      pointer-events: none;
+    }
+
+    /* ── Theme toggle (top-right) ── */
+    #theme-toggle {
+      position: fixed;
+      top: 1rem;
+      right: 1.4rem;
+      z-index: 500;
+      background: var(--pill-bg);
+      border: 1px solid var(--pill-border);
+      border-radius: 100px;
+      padding: 0.32rem 0.85rem;
+      color: var(--fg-dim);
+      font-family: var(--sans);
+      font-size: 0.64rem;
+      font-weight: 400;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      transition: color 0.2s, background 0.2s, transform 0.1s;
+    }
+    #theme-toggle:hover  { color: var(--fg); background: var(--pill-border); }
+    #theme-toggle:active { transform: scale(0.95); }
+
+    /* ── Worker status badge (bottom-right) ── */
+    #worker-badge {
+      position: fixed;
+      bottom: 1.1rem;
+      right: 1.4rem;
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-family: var(--mono);
+      font-size: 0.60rem;
+      letter-spacing: 0.09em;
+      color: var(--fg-dim);
+      transition: color 0.4s;
+    }
+
+    #worker-dot {
+      flex-shrink: 0;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* State colours — controlled via data-state attribute */
+    #worker-badge[data-state="loading"] { color: #facc15; }
+    #worker-badge[data-state="loading"] #worker-dot {
+      animation: dot-pulse 0.9s ease-in-out infinite;
+    }
+    #worker-badge[data-state="ready"] { color: #4ade80; }
+    #worker-badge[data-state="ready"] #worker-dot {
+      box-shadow: 0 0 7px #4ade8099;
+    }
+    #worker-badge[data-state="error"] { color: var(--err); }
+
+    @keyframes dot-pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.15; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Static chrome ──────────────────────────────────────────────────── -->
+<span id="corner-label" aria-hidden="true">LaTeX Calc</span>
+
+<button id="theme-toggle" aria-label="Toggle light/dark mode">Light</button>
+
+<div id="worker-badge" data-state="loading" role="status" aria-live="polite">
+  <div id="worker-dot"></div>
+  <span id="worker-label">loading</span>
+</div>
+
+<!-- ── Custom caret (JS-positioned) ─────────────────────────────────── -->
+<div id="custom-caret" aria-hidden="true"></div>
+
+<!-- ── Mirror div (off-screen measurement tool) ─────────────────────── -->
+<div id="mirror" aria-hidden="true"></div>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     MAIN SPLIT LAYOUT
+════════════════════════════════════════════════════════════════════ -->
+<div id="app">
+
+  <!-- Top half: LaTeX input -->
+  <section class="pane" id="pane-top" aria-label="LaTeX input">
+    <div class="scale-wrapper" id="input-scale">
+      <textarea
+        id="latex-input"
+        rows="1"
+        wrap="off"
+        spellcheck="false"
+        autocorrect="off"
+        autocomplete="off"
+        autocapitalize="off"
+        aria-label="Type a LaTeX expression"
+        placeholder="\int_{0}^{1} x^2 \, dx"
+      ></textarea>
+    </div>
+  </section>
+
+  <!-- Bottom half: rendered KaTeX result -->
+  <section class="pane" id="pane-bottom" aria-label="Rendered result">
+    <div class="scale-wrapper" id="output-scale">
+      <div id="katex-output" role="math" aria-live="polite">
+        <span id="output-hint">result appears here</span>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /#app -->
+
+
+<script>
+/* ════════════════════════════════════════════════════════════════════════
+   LIVE LATEX CALCULATOR — Frontend Shell
+   ════════════════════════════════════════════════════════════════════════
+
+   ┌─────────────────────────────────────────────────────────────────────┐
+   │  PUBLIC INTERFACE — wire your Pyodide worker bridge here            │
+   │                                                                     │
+   │  sendToWorker(latexString)                                          │
+   │    Called on every debounced keystroke with the raw LaTeX string.   │
+   │    Replace the stub body with:                                      │
+   │      worker.postMessage({ id: ++latestId, latexInput: latex })      │
+   │                                                                     │
+   │  receiveFromWorker(payload)                                         │
+   │    Call this from your worker's onmessage handler:                  │
+   │      worker.onmessage = ({ data }) => window.receiveFromWorker(data)│
+   │    payload shape: { status, result?, error? }                       │
+   │                                                                     │
+   │  setWorkerStatus(state)                                             │
+   │    Updates the status badge. states: 'loading' | 'ready' | 'error' │
+   │    Call after Pyodide loads or fails.                               │
+   └─────────────────────────────────────────────────────────────────────┘
+════════════════════════════════════════════════════════════════════════ */
+
+'use strict';
+
+/* ── DOM references ─────────────────────────────────────────────────── */
+const input       = document.getElementById('latex-input');
+const inputScale  = document.getElementById('input-scale');
+const outputScale = document.getElementById('output-scale');
+const katexOut    = document.getElementById('katex-output');
+const caret       = document.getElementById('custom-caret');
+const mirror      = document.getElementById('mirror');
+const themeBtn    = document.getElementById('theme-toggle');
+const workerBadge = document.getElementById('worker-badge');
+const workerLabel = document.getElementById('worker-label');
+const paneTop     = document.getElementById('pane-top');
+const paneBottom  = document.getElementById('pane-bottom');
+
+/* ── Tuning constants ───────────────────────────────────────────────── */
+const SAFE_MARGIN  = 0.88;    // max fraction of pane width content may occupy
+const MIN_W_VW     = 0.50;    // textarea minimum natural width (50vw)
+const DEBOUNCE_MS  = 130;     // ms quiet period before sendToWorker fires
+
+/* ── Font properties to sync from textarea → mirror ────────────────── */
+const MIRROR_PROPS = [
+  'fontFamily','fontSize','fontWeight','fontStyle','fontVariant',
+  'letterSpacing','lineHeight','textAlign',
+  'paddingTop','paddingBottom','paddingLeft','paddingRight',
+  'borderTopWidth','borderBottomWidth','borderLeftWidth','borderRightWidth',
+  'boxSizing','whiteSpace','wordBreak',
+];
+
+
+/* ════════════════════════════════════════════════════════════════════════
+   SECTION 1 — THEME
+════════════════════════════════════════════════════════════════════════ */
+let isDark = true;
+
+themeBtn.addEventListener('click', () => {
+  isDark = !isDark;
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  themeBtn.textContent = isDark ? 'Light' : 'Dark';
+});
+
+
+/* ════════════════════════════════════════════════════════════════════════
+   SECTION 2 — WORKER INTEGRATION
+   ──────────────────────────────────────────────────────────────────────
+   Spawns the worker, tracks message IDs to discard stale keystroke results,
+   and handles status changes.
+════════════════════════════════════════════════════════════════════════ */
+
+const worker = new Worker('worker.js?v=3');
+let latestId = 0;
+let workerReady = false;
+
+/**
+ * sendToWorker
+ * Called on every debounced keystroke with the current LaTeX string.
+ */
+function sendToWorker(latex) {
+  if (!workerReady) return;
+  const id = ++latestId;
+  worker.postMessage({ id, latexInput: latex });
+}
+
+// Listen for results from worker.js
+worker.onmessage = ({ data }) => {
+  if (data.status === "progress") {
+    setWorkerStatus('loading');
+    workerLabel.textContent = data.step;
+    return;
+  }
+
+  // Boot signal — worker finished loading Pyodide + SymPy.
+  if (data.status === "ready") {
+    workerReady = true;
+    setWorkerStatus('ready');
+    // If there is already text in the input when ready, evaluate it
+    if (input.value.trim()) {
+      sendToWorker(input.value);
+    }
+    return;
+  }
+
+  if (data.status === "init_error") {
+    setWorkerStatus('error');
+    _showError("Initialization failed: " + data.error);
+    return;
+  }
+
+  // Discard responses that belong to a previous keystroke.
+  if (data.id !== latestId) return;
+
+  if (data.status === "success") {
+    _renderKatex(data.result);
+  } else if (data.status === "incomplete") {
+    // User is still typing — keep the last valid render, show nothing new.
+  } else if (data.status === "error") {
+    _showError(data.error ?? 'Evaluation error');
+  }
+};
+
+worker.onerror = (e) => {
+  console.error("[worker] Uncaught error:", e);
+  setWorkerStatus('error');
+  _showError("Worker error occurred.");
+};
+
+/**
+ * setWorkerStatus
+ * Updates the status badge in the corner.
+ *
+ * @param {'loading'|'ready'|'error'} state
+ */
+function setWorkerStatus(state) {
+  workerBadge.setAttribute('data-state', state);
+  workerLabel.textContent = state;
+}
+
+
+
+/* ════════════════════════════════════════════════════════════════════════
+   SECTION 3 — KATEX RENDERING
+════════════════════════════════════════════════════════════════════════ */
+
+function _renderKatex(latex) {
+  katex.render(latex, katexOut, {
+    displayMode:  true,
+    throwOnError: false,
+    output:       'html',
+    trust:        false,
+  });
+  _fitOutput();
+}
+
+function _showHint() {
+  katexOut.innerHTML = '<span id="output-hint">result appears here</span>';
+  outputScale.style.transform = '';
+}
+
+function _showError(msg) {
+  katexOut.innerHTML =
+    `<span style="font-family:var(--mono);font-size:0.82em;color:var(--err);">`
+    + _esc(msg)
+    + `</span>`;
+  outputScale.style.transform = '';
+}
+
+function _esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════
+   SECTION 4 — MIRROR SYNC
+   Copies computed font styles from the textarea to the mirror div so that
+   character-level measurements in the mirror match the textarea exactly.
+════════════════════════════════════════════════════════════════════════ */
+
+function _syncMirror() {
+  const cs = getComputedStyle(input);
+  MIRROR_PROPS.forEach(p => { mirror.style[p] = cs[p]; });
+}
+
+/** Escape text content for mirror innerHTML — preserves whitespace. */
+function _mirrorEsc(str) {
+  return str
+    .replace(/&/g,  '&amp;')
+    .replace(/</g,  '&lt;')
+    .replace(/>/g,  '&gt;')
+    .replace(/ /g,  '&nbsp;')
+    .replace(/\n/g, '<br>');
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════
+   SECTION 5 — TEXTAREA AUTO-HEIGHT
+   The textarea grows vertically to fit multiple lines (if user presses ↵).
+════════════════════════════════════════════════════════════════════════ */
+
+function _resizeHeight() {
+  input.style.height = 'auto';
+  input.style.height = input.scrollHeight + 'px';
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════
+   SECTION 6 — SHRINK-TO-FIT: INPUT
+   ──────────────────────────────────────────────────────────────────────
+   Algorithm:
+     1. Render full textarea text in the mirror with auto width
+        → mirror.scrollWidth == natural content width in pixels
+     2. Set textarea.width = max(MIN_W_VW * viewport, contentWidth)
+        → overflow:hidden on textarea never clips because width ≥ content
+     3. scale = min(1, paneWidth × SAFE_MARGIN / contentWidth)
+     4. Apply transform: scale(scale) to inputScale wrapper
+════════════════════════════════════════════════════════════════════════ */
+
+function _fitInput() {
+  _syncMirror();
+
+  /* Phase 1: measure natural content width via auto-width mirror */
+  mirror.style.width = 'auto';
+  mirror.innerHTML   = _mirrorEsc(input.value) || '\u00a0';
+
+  const minW     = window.innerWidth * MIN_W_VW;
+  const contentW = Math.max(minW, mirror.scrollWidth);
+
+  /* Phase 2: expand textarea to match content (prevents overflow clipping) */
+  input.style.width = contentW + 'px';
+
+  /* Phase 3 & 4: scale wrapper to keep content within SAFE_MARGIN of pane */
+  const available = paneTop.clientWidth * SAFE_MARGIN;
+  const scale     = contentW > available ? available / contentW : 1;
+  inputScale.style.transform = scale < 1 ? `scale(${scale.toFixed(5)})` : '';
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════
+   SECTION 7 — SHRINK-TO-FIT: OUTPUT
+   KaTeX renders into katexOut; we measure its scroll width and scale
+   the output-scale wrapper so it always fits within SAFE_MARGIN.
+════════════════════════════════════════════════════════════════════════ */
+
+function _fitOutput() {
+  const contentW  = katexOut.scrollWidth;
+  const available = paneBottom.clientWidth * SAFE_MARGIN;
+  const scale     = contentW > available ? available / contentW : 1;
+  outputScale.style.transform = scale < 1 ? `scale(${scale.toFixed(5)})` : '';
+}
+
+/* Re-fit both panes whenever the viewport is resized */
+const _ro = new ResizeObserver(() => { _fitInput(); _fitOutput(); });
+_ro.observe(paneTop);
+_ro.observe(paneBottom);
+
+
+/* ════════════════════════════════════════════════════════════════════════
+   SECTION 8 — CUSTOM CARET
+   ──────────────────────────────────────────────────────────────────────
+   Position algorithm:
+     1. Sync mirror styles to textarea
+     2. Set mirror width = textarea's current natural offsetWidth
+        (same text flow as the textarea → correct multi-line positions)
+     3. Render text[0 .. selectionStart] + sentinel <span> into mirror
+     4. Sentinel's BoundingClientRect gives the character position
+        in the mirror's natural (unscaled) coordinate space:
+          natX = sentinel.left − mirror.left   (horizontal char offset)
+          natY = sentinel.top  − mirror.top    (vertical line offset)
+     5. Get scale factor from inputScale's computed transform matrix
+     6. Get textarea's VISUAL bounding rect (getBoundingClientRect()
+        returns post-transform, visual-space coordinates)
+     7. Caret visual position:
+          cx = tRect.left + natX × scale
+          cy = tRect.top  + natY × scale  + vertical centering
+════════════════════════════════════════════════════════════════════════ */
+
+function _updateCaret() {
+  if (document.activeElement !== input) {
+    caret.style.opacity = '0';
+    return;
+  }
+
+  _syncMirror();
+
+  const sel   = input.selectionStart ?? 0;
+  const pre   = _mirrorEsc(input.value.slice(0, sel));
+  const post  = _mirrorEsc(input.value.slice(sel));
+
+  /* Set mirror width = textarea's natural (unscaled) width for identical text flow */
+  mirror.style.width = input.offsetWidth + 'px';
+
+  /* Zero-width space sentinel marks the caret position. Include 'post' so text-align: center works! */
+  mirror.innerHTML = pre + '<span id="csent">\u200b</span>' + post;
+
+  const sentinel = document.getElementById('csent');
+  if (!sentinel) { caret.style.opacity = '0'; return; }
+
+  const sRect = sentinel.getBoundingClientRect();
+  const mRect = mirror.getBoundingClientRect();
+  const tRect = input.getBoundingClientRect();   // VISUAL rect (post-transform)
+
+  /* Natural character offsets within textarea */
+  const natX = sRect.left - mRect.left;
+  const natY = sRect.top  - mRect.top;
+
+  /* Extract the current scale factor from the wrapper's CSS transform matrix */
+  const matrix = new DOMMatrix(getComputedStyle(inputScale).transform);
+  const scale  = matrix.a || 1;
+
+  /* Caret dimensions — proportional to the textarea's visual font size */
+  const fs      = parseFloat(getComputedStyle(input).fontSize) * scale;
+  const lineH   = sRect.height * scale;
+  const caretH  = fs * 1.20;
+
+  /* Final visual position */
+  const cx = tRect.left + natX * scale;
+  const cy = tRect.top  + natY * scale + (lineH - caretH) / 2;
+
+  caret.style.left   = cx + 'px';
+  caret.style.top    = cy + 'px';
+  caret.style.height = caretH + 'px';
+  caret.style.opacity = '1';  // animation controls blink, this enables it
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════
+   SECTION 9 — EVENT WIRING
+════════════════════════════════════════════════════════════════════════ */
+
+let _debounce = null;
+
+/* Input: resize, fit, move caret, debounce worker call */
+input.addEventListener('input', () => {
+  _resizeHeight();
+  _fitInput();
+  _updateCaret();
+
+  if (!input.value.trim()) {
+    _showHint();
+    clearTimeout(_debounce);
+    return;
+  }
+
+  clearTimeout(_debounce);
+  _debounce = setTimeout(() => sendToWorker(input.value), DEBOUNCE_MS);
+});
+
+/* Caret: update on all cursor-movement events */
+['keyup', 'keydown', 'click', 'select'].forEach(evt =>
+  input.addEventListener(evt, _updateCaret)
+);
+
+/* selectionchange fires on document, not on individual elements */
+document.addEventListener('selectionchange', () => {
+  if (document.activeElement === input) _updateCaret();
+});
+
+input.addEventListener('focus', () => {
+  caret.style.opacity = '1';
+  _updateCaret();
+});
+
+input.addEventListener('blur', () => {
+  caret.style.opacity = '0';
+});
+
+
+/* ════════════════════════════════════════════════════════════════════════
+   SECTION 10 — INIT
+════════════════════════════════════════════════════════════════════════ */
+
+(function init() {
+  _syncMirror();
+  _resizeHeight();
+  _fitInput();
+  setWorkerStatus('loading');
+  input.focus();
+})();
+</script>
+</body>
+</html>
