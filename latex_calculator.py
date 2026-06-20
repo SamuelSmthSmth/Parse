@@ -419,6 +419,78 @@ def _try_matrix(s: str):
 # PUBLIC API
 # ═════════════════════════════════════════════════════════════════════════════
 
+
+def _generate_steps(expr, mode: str) -> list[str]:
+    from sympy import simplify, Integral, Derivative, apart
+    steps = []
+    
+    if mode == 'raw':
+        steps.append(to_latex(expr))
+        try:
+            expanded = expr.expand()
+            if expanded != expr:
+                steps.append(to_latex(expanded))
+        except Exception:
+            pass
+        try:
+            evaluated = expr.doit()
+            if evaluated != expr and (len(steps) == 0 or to_latex(evaluated) != steps[-1]):
+                steps.append(to_latex(evaluated))
+        except Exception:
+            pass
+        try:
+            simplified = simplify(expr.doit())
+            # Make sure we don't duplicate
+            if len(steps) == 0 or to_latex(simplified) != steps[-1]:
+                if simplified != expr:
+                    steps.append(to_latex(simplified))
+        except Exception:
+            pass
+
+    elif mode == 'friendly':
+        try:
+            ap = apart(expr)
+            if ap != expr:
+                steps.append(to_latex(ap))
+        except Exception:
+            pass
+            
+        if expr.has(Integral):
+            for i in expr.atoms(Integral):
+                try:
+                    from sympy.integrals.manualintegrate import manualintegrate
+                    limits = i.limits
+                    if len(limits) == 1 and len(limits[0]) == 1:
+                        var = limits[0][0]
+                        mi = manualintegrate(i.function, var)
+                        if mi != i:
+                            steps.append(to_latex(mi))
+                except Exception:
+                    pass
+                    
+        if expr.has(Derivative):
+            for d in expr.atoms(Derivative):
+                try:
+                    evaluated = d.doit()
+                    if evaluated != d:
+                        steps.append(to_latex(evaluated))
+                except Exception:
+                    pass
+    
+    return steps
+
+def _fix_implicit_mul(expr):
+    from sympy.core.function import AppliedUndef
+    from sympy import Symbol
+    if isinstance(expr, AppliedUndef):
+        func_name = expr.func.__name__
+        if func_name in ('i', 'j', 'k', 'n', 'm', 'x', 'y', 'z', 'a', 'b', 'c', 't', 'u', 'v', 'w'):
+            if len(expr.args) == 1:
+                return Symbol(func_name) * _fix_implicit_mul(expr.args[0])
+    if expr.args:
+        return expr.func(*[_fix_implicit_mul(a) for a in expr.args])
+    return expr
+
 def evaluate_latex(latex_input: str, settings_json: str = '{}') -> str:
     """
     Parse, evaluate, and simplify a LaTeX math string.
@@ -445,6 +517,7 @@ def evaluate_latex(latex_input: str, settings_json: str = '{}') -> str:
 
     # ── Parse settings ────────────────────────────────────────────────────────
     settings: dict = {}
+    lhs_sym = None
     try:
         settings = json.loads(settings_json) if settings_json else {}
     except Exception:
@@ -504,6 +577,21 @@ def evaluate_latex(latex_input: str, settings_json: str = '{}') -> str:
     except Exception:
         pass  # never crash on assumption injection
 
+    # ── Step 3: apply global context ─────────────────────────────────────────
+    raw_fs = set()
+    try:
+        context = settings.get("context", {})
+        if context:
+            from sympy import sympify
+            subs_dict = {}
+            for k, v in context.items():
+                for s in expr.free_symbols:
+                    if str(s) == k:
+                        subs_dict[s] = sympify(v)
+            expr = expr.subs(subs_dict)
+    except Exception:
+        pass
+
     # ── Evaluate ──────────────────────────────────────────────────────────────
     try:
         evaluated = expr.doit()
@@ -515,6 +603,56 @@ def evaluate_latex(latex_input: str, settings_json: str = '{}') -> str:
         return _error(f"Evaluation error: {_short(exc)}")
     except Exception as exc:
         return _error(f"Unexpected error: {_short(exc)}")
+
+    # ── Extract Free Symbols ─────────────────────────
+    try:
+        # Extract free symbols AFTER global context and evaluation
+        raw_fs = result.free_symbols
+    except Exception:
+        pass
+        
+    # ── Plot Detection ────────────────────────────────────────────────────────
+    plot_data = None
+    plot_var = None
+    try:
+        def _to_plot_string(ex, var_sym=None) -> str:
+            if var_sym is not None:
+                from sympy import Symbol
+                ex = ex.subs(var_sym, Symbol('x'))
+            return str(ex).replace('**', '^')
+
+        from sympy import Integral, Eq
+        if not isinstance(expr, Eq):
+            if expr.has(Integral):
+                integrals = expr.atoms(Integral)
+                if len(integrals) == 1:
+                    i_node = list(integrals)[0]
+                    if len(i_node.limits) == 1 and len(i_node.limits[0]) == 3:
+                        var, a, b = i_node.limits[0]
+                        if a.is_real and b.is_real and len(i_node.function.free_symbols) <= 1:
+                            plot_var = var
+                            plot_data = {
+                                "fn": _to_plot_string(i_node.function, plot_var),
+                                "bounds": [float(a), float(b)]
+                            }
+            if not plot_data:
+                fs = list(result.free_symbols)
+                if len(fs) == 1:
+                    plot_var = fs[0]
+                    plot_data = {
+                        "fn": _to_plot_string(result, plot_var)
+                    }
+    except Exception:
+        pass
+
+    # ── Steps ─────────────────────────────────────────────────────────────────
+    stepsMode = settings.get('stepsMode', 'off')
+    steps_list = []
+    if stepsMode in ('raw', 'friendly'):
+        try:
+            steps_list = _generate_steps(expr, stepsMode)
+        except Exception:
+            pass
 
     # ── Serialise ─────────────────────────────────────────────────────────────
     try:
@@ -537,8 +675,20 @@ def evaluate_latex(latex_input: str, settings_json: str = '{}') -> str:
         pass
 
     payload: dict = {"status": "success", "result": result_latex}
+    
+    # Free symbols extraction
+    ignore_vars = {'x', 'y', 'z', 't'}
+        
+    fs_list = sorted([str(s) for s in raw_fs if str(s) not in ignore_vars])
+    if fs_list:
+        payload["free_symbols"] = fs_list
+        
     if approx_latex is not None:
         payload["approx"] = approx_latex
+    if steps_list:
+        payload["steps"] = steps_list
+    if plot_data:
+        payload["plot"] = plot_data
     return json.dumps(payload)
 
 

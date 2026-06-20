@@ -9,6 +9,7 @@
   <!-- KaTeX -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous" />
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/function-plot/dist/function-plot.js"></script>
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -312,7 +313,85 @@
       pointer-events: auto;
     }
 
-    .approx-output .katex { color: var(--fg-dim) !important; }
+    .plot-container .tick text {
+      fill: var(--fg-subtle) !important;
+    }
+    
+    /* ════════════════════════════════════════════════════════════════
+       CONSTANTS PANEL
+    ════════════════════════════════════════════════════════════════ */
+    #constants-panel {
+      position: fixed;
+      top: 50%;
+      left: 2rem;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      opacity: 0.15;
+      transition: opacity 0.2s var(--ease);
+      pointer-events: auto;
+      z-index: 100;
+    }
+    
+    #constants-panel:hover, #constants-panel:focus-within {
+      opacity: 1;
+    }
+    
+    /* Reveal hitbox so you don't have to be pixel perfect to trigger hover */
+    #constants-panel::before {
+      content: '';
+      position: absolute;
+      top: -2rem; bottom: -2rem; left: -2rem; right: -2rem;
+      z-index: -1;
+    }
+
+    .constant-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .constant-row input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--fg);
+      font-family: var(--mono);
+      font-size: 1.1rem;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .constant-row input.constant-key {
+      width: 2rem;
+      text-align: right;
+    }
+    
+    .constant-row span {
+      color: var(--fg-dim);
+      font-family: var(--mono);
+      font-size: 1.1rem;
+    }
+    
+    .constant-row input.constant-val {
+      width: 4rem;
+    }
+    
+    #add-constant-btn {
+      background: transparent;
+      border: none;
+      color: var(--fg-dim);
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 1.1rem;
+      text-align: left;
+      padding-left: 3rem;
+    }
+    
+    #add-constant-btn:hover {
+      color: var(--fg);
+    }.approx-output .katex { color: var(--fg-dim) !important; }
     .approx-output .katex-display { margin: 0 !important; }
 
     /* ════════════════════════════════════════════════════════════════
@@ -493,6 +572,16 @@
 <!-- ── Static chrome ──────────────────────────────────────────────────── -->
 <span id="corner-label" aria-hidden="true">LaTeX Calc</span>
 
+<div id="constants-panel">
+  <!-- initial constant example -->
+  <div class="constant-row">
+    <input type="text" class="constant-key" value="a" placeholder="var" oninput="_triggerAllBlocks()" />
+    <span>=</span>
+    <input type="text" class="constant-val" value="5" placeholder="val" oninput="_triggerAllBlocks()" />
+  </div>
+  <button id="add-constant-btn" onclick="_addConstantRow()">+</button>
+</div>
+
 <button id="theme-toggle" aria-label="Toggle light/dark mode">Light</button>
 
 <div id="worker-badge" data-state="loading" role="status" aria-live="polite">
@@ -591,7 +680,8 @@ const settings = {
   showApprox:  false,
   assumeReal:  false,
   useDegrees:  false,
-  precision:   10
+  precision:   10,
+  stepsMode:   'off'
 };
 
 /**
@@ -718,6 +808,7 @@ function _renderCmdResults() {
     const rootCmds = [
       { type: 'menu', id: 'themes', label: 'Themes...', keywords: 'theme color dark light' },
       { type: 'menu', id: 'settings', label: 'Settings...', keywords: 'settings approx assume angle precision' },
+      { type: 'menu', id: 'steps_mode', label: 'Steps Mode...', keywords: 'steps mode friendly raw off' },
       { type: 'cmd', label: `Clear Notebook`, keywords: 'clear notebook empty delete' }
     ];
     rootCmds.forEach(cmd => {
@@ -754,6 +845,17 @@ function _renderCmdResults() {
       { type: 'cmd', label: `Settings: Set Precision: 10`, keywords: 'precision decimals' }
     ];
     settingsCmds.forEach(cmd => {
+      if (!query || cmd.label.toLowerCase().includes(query) || cmd.keywords.includes(query)) _cmdItems.push(cmd);
+    });
+  } else if (_cmdCurrentMenu === 'steps_mode') {
+    cmdInput.placeholder = "Search steps mode...";
+    _cmdItems.push({ type: 'back', label: '< Back to Main Menu', keywords: '' });
+    const stepsCmds = [
+      { type: 'cmd', label: `Steps Mode: Off${settings.stepsMode === 'off' ? ' (Active)' : ''}`, keywords: 'off disabled' },
+      { type: 'cmd', label: `Steps Mode: Raw${settings.stepsMode === 'raw' ? ' (Active)' : ''}`, keywords: 'raw internal ast' },
+      { type: 'cmd', label: `Steps Mode: Friendly${settings.stepsMode === 'friendly' ? ' (Active)' : ''}`, keywords: 'friendly tutor manual' }
+    ];
+    stepsCmds.forEach(cmd => {
       if (!query || cmd.label.toLowerCase().includes(query) || cmd.keywords.includes(query)) _cmdItems.push(cmd);
     });
   }
@@ -849,6 +951,18 @@ function _executeCmd(item) {
       if (readyCount === WORKER_COUNT) {
         blocks.forEach(b => { if (b.latex.trim()) sendToWorker(b.id, b.latex); });
       }
+    } else if (item.label.includes('Steps Mode:')) {
+      if (item.label.includes('Off')) {
+        settings.stepsMode = 'off';
+      } else if (item.label.includes('Raw')) {
+        settings.stepsMode = 'raw';
+      } else if (item.label.includes('Friendly')) {
+        settings.stepsMode = 'friendly';
+      }
+      _lsSave(LS.STEPS_MODE, settings.stepsMode);
+      if (readyCount === WORKER_COUNT) {
+        blocks.forEach(b => { if (b.latex.trim()) sendToWorker(b.id, b.latex); });
+      }
     } else if (item.label.includes('Clear Notebook')) {
       blocks.slice().forEach(b => {
         const el = document.getElementById(`block-${b.id}`);
@@ -899,9 +1013,11 @@ let requestSequence = 0;
 // Maps blockId -> { latex, sequenceId }
 const pendingQueue = new Map();
 
-for (let i = 0; i < WORKER_COUNT; i++) {
+function _createWorker(i) {
   const w = new Worker('worker.js?v=4');
-  workers.push({ worker: w, idle: true });
+  if (!workers[i]) workers[i] = { worker: null, idle: true };
+  workers[i].worker = w;
+  workers[i].idle = true;
 
   w.onmessage = ({ data }) => {
     if (data.status === 'progress') {
@@ -929,10 +1045,18 @@ for (let i = 0; i < WORKER_COUNT; i++) {
 
     workers[i].idle = true;
 
-    // Discard stale responses
     const block = blocks.find(b => b.id === data.blockId);
-    if (block && data.id === block.latestSeq) {
-      _handleWorkerResponse(block, data);
+    if (block) {
+      if (block.watchdogTimer) {
+        clearTimeout(block.watchdogTimer);
+        block.watchdogTimer = null;
+      }
+      _clearThinkingState(block.id);
+      
+      // Discard stale responses
+      if (data.id === block.latestSeq) {
+        _handleWorkerResponse(block, data);
+      }
     }
 
     _processQueue();
@@ -942,24 +1066,123 @@ for (let i = 0; i < WORKER_COUNT; i++) {
     console.error(`[worker ${i}] Uncaught error:`, e);
     workers[i].idle = true;
     setWorkerStatus('error');
+    
+    // Clear any block associated with this worker
+    blocks.forEach(block => {
+      if (block.activeWorkerIndex === i) {
+        if (block.watchdogTimer) {
+          clearTimeout(block.watchdogTimer);
+          block.watchdogTimer = null;
+        }
+        _clearThinkingState(block.id);
+      }
+    });
+    
     _processQueue();
   };
 }
 
+for (let i = 0; i < WORKER_COUNT; i++) {
+  _createWorker(i);
+}
+
+function _setThinkingState(blockId) {
+  const el = document.getElementById(`block-${blockId}`);
+  if (el) {
+    const out = el.querySelector('.pane-output');
+    if (out) out.classList.add('thinking');
+  }
+}
+
+function _clearThinkingState(blockId) {
+  const el = document.getElementById(`block-${blockId}`);
+  if (el) {
+    const out = el.querySelector('.pane-output');
+    if (out) out.classList.remove('thinking');
+  }
+}
+
 function _processQueue() {
-  const idleWorker = workers.find(w => w.idle);
-  if (!idleWorker) return;
+  const idleWorkerIndex = workers.findIndex(w => w.idle);
+  if (idleWorkerIndex === -1) return;
   if (pendingQueue.size === 0) return;
 
   const [blockId, req] = pendingQueue.entries().next().value;
   pendingQueue.delete(blockId);
 
-  idleWorker.idle = false;
-  idleWorker.worker.postMessage({
-    id: req.sequenceId,
+  _dispatchToWorker(idleWorkerIndex, blockId, req.latex, req.sequenceId);
+}
+
+function _dispatchToWorker(workerIndex, blockId, latex, seqId) {
+  const workerObj = workers[workerIndex];
+  workerObj.idle = false;
+  
+  const block = blocks.find(b => b.id === blockId);
+  if (block) {
+    block.activeWorkerIndex = workerIndex;
+    _setThinkingState(blockId);
+    
+    if (block.watchdogTimer) clearTimeout(block.watchdogTimer);
+    block.watchdogTimer = setTimeout(() => {
+      // The Executioner
+      console.warn(`Worker ${workerIndex} hung! Terminating and replacing...`);
+      workerObj.worker.terminate();
+      
+      readyCount = Math.max(0, readyCount - 1);
+      _createWorker(workerIndex);
+      
+      _clearThinkingState(blockId);
+      block.watchdogTimer = null;
+      _showError(blockId, "Computation Timeout: Expression intractable.");
+      
+    }, 5000);
+  }
+  
+  const constants = getGlobalConstants();
+  console.log("Payload Constants:", constants);
+
+  workerObj.worker.postMessage({
+    id: seqId,
     blockId: blockId,
-    latexInput: req.latex,
-    settings: { assumeReal: settings.assumeReal }
+    latexInput: latex,
+    settings: { 
+      assumeReal: settings.assumeReal, 
+      useDegrees: settings.useDegrees, 
+      precision: settings.precision, 
+      stepsMode: settings.stepsMode,
+      context: constants
+    }
+  });
+}
+
+function getGlobalConstants() {
+  const constants = {};
+  document.querySelectorAll('#constants-panel .constant-row').forEach(row => {
+    const key = row.querySelector('.constant-key').value.trim();
+    const val = row.querySelector('.constant-val').value.trim();
+    if (key && val) {
+      constants[key] = val;
+    }
+  });
+  return constants;
+}
+
+function _addConstantRow() {
+  const panel = document.getElementById('constants-panel');
+  const btn = document.getElementById('add-constant-btn');
+  const row = document.createElement('div');
+  row.className = 'constant-row';
+  row.innerHTML = `
+    <input type="text" class="constant-key" placeholder="var" oninput="_triggerAllBlocks()" />
+    <span>=</span>
+    <input type="text" class="constant-val" placeholder="val" oninput="_triggerAllBlocks()" />
+  `;
+  panel.insertBefore(row, btn);
+}
+
+function _triggerAllBlocks() {
+  blocks.forEach(b => {
+    sendToWorker(b.id, b.latex);
   });
 }
 
@@ -975,15 +1198,9 @@ function sendToWorker(blockId, latex) {
     return;
   }
 
-  const idleWorker = workers.find(w => w.idle);
-  if (idleWorker) {
-    idleWorker.idle = false;
-    idleWorker.worker.postMessage({
-      id: requestSequence,
-      blockId: blockId,
-      latexInput: latex,
-      settings: { assumeReal: settings.assumeReal, useDegrees: settings.useDegrees, precision: settings.precision }
-    });
+  const idleWorkerIndex = workers.findIndex(w => w.idle);
+  if (idleWorkerIndex !== -1) {
+    _dispatchToWorker(idleWorkerIndex, blockId, latex, requestSequence);
   } else {
     pendingQueue.set(blockId, { latex, sequenceId: requestSequence });
   }
@@ -997,6 +1214,8 @@ function setWorkerStatus(state) {
 function _handleWorkerResponse(block, data) {
   if (data.status === 'success') {
     _clearErrorGlow();
+    
+    // ── KaTeX ────────────────────────────────────────────────────────────────
     _renderKatex(block.id, data.result);
     if (data.approx) {
       block.approx = data.approx;
@@ -1005,6 +1224,93 @@ function _handleWorkerResponse(block, data) {
       block.approx = null;
       _hideApprox(block.id);
     }
+    
+    // ── Steps ────────────────────────────────────────────────────────────────
+    const stepsToggle = document.getElementById(`steps-toggle-${block.id}`);
+    const stepsContainer = document.getElementById(`steps-container-${block.id}`);
+    if (data.steps && data.steps.length > 0 && stepsToggle && stepsContainer) {
+      stepsToggle.style.display = 'block';
+      stepsToggle.textContent = `[+] Show Steps (${data.steps.length})`;
+      stepsContainer.innerHTML = '';
+      data.steps.forEach(stepLatex => {
+        const stepEl = document.createElement('div');
+        stepEl.className = 'step-item';
+        katex.render(stepLatex, stepEl, { displayMode: true, throwOnError: false });
+        stepsContainer.appendChild(stepEl);
+      });
+    } else if (stepsToggle && stepsContainer) {
+      stepsToggle.style.display = 'none';
+      stepsContainer.innerHTML = '';
+      stepsContainer.classList.remove('open');
+    }
+    
+
+    // ── Graphing Engine ──────────────────────────────────────────────────────
+    const plotContainer = document.getElementById(`plot-container-${block.id}`);
+    if (data.plot && plotContainer) {
+      plotContainer.style.display = 'flex';
+      plotContainer.innerHTML = '';
+      
+      const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--caret-col').trim() || '#8b78ff';
+      let xDomain = [-10, 10];
+      if (data.plot.bounds) {
+        const span = Math.abs(data.plot.bounds[1] - data.plot.bounds[0]);
+        const pad = Math.max(span * 0.2, 1);
+        xDomain = [data.plot.bounds[0] - pad, data.plot.bounds[1] + pad];
+      }
+      
+      try {
+        if (plotContainer.__observer) {
+          plotContainer.__observer.disconnect();
+        }
+
+        functionPlot({
+          target: `#plot-container-${block.id}`,
+          width: 500,
+          height: 250,
+          grid: false,
+          xAxis: { domain: xDomain },
+          data: [{
+            fn: data.plot.fn,
+            color: accentColor,
+            range: data.plot.bounds || undefined,
+            closed: data.plot.bounds ? true : false
+          }]
+        });
+
+        // Move axes to cross at the origin and keep them there during zoom
+        const svg = plotContainer.querySelector('svg');
+        if (svg) {
+          const updateAxes = () => {
+            const originLines = svg.querySelectorAll('.origin line');
+            let xZero = null, yZero = null;
+            originLines.forEach(l => {
+              if (l.getAttribute('x1') === l.getAttribute('x2')) xZero = l.getAttribute('x1');
+              if (l.getAttribute('y1') === l.getAttribute('y2')) yZero = l.getAttribute('y1');
+            });
+            if (xZero) {
+              const yAxis = svg.querySelector('.y.axis');
+              if (yAxis) yAxis.setAttribute('transform', `translate(${xZero}, 0)`);
+            }
+            if (yZero) {
+              const xAxis = svg.querySelector('.x.axis');
+              if (xAxis) xAxis.setAttribute('transform', `translate(0, ${yZero})`);
+            }
+          };
+          updateAxes();
+          
+          const observer = new MutationObserver(updateAxes);
+          observer.observe(svg, { childList: true, subtree: true, attributes: true, attributeFilter: ['transform', 'd', 'x1', 'y1'] });
+          plotContainer.__observer = observer;
+        }
+      } catch (err) {
+        console.error("Plot error", err);
+      }
+    } else if (plotContainer) {
+      plotContainer.style.display = 'none';
+      plotContainer.innerHTML = '';
+    }
+
   } else if (data.status === 'incomplete') {
     _scheduleErrorGlow();
     _hideApprox(block.id);
@@ -1097,6 +1403,21 @@ function _showError(blockId, msg) {
   outputScale.style.transform = '';
 }
 
+
+function _toggleSteps(blockId) {
+  const container = document.getElementById(`steps-container-${blockId}`);
+  const toggle = document.getElementById(`steps-toggle-${blockId}`);
+  if (!container || !toggle) return;
+  const isOpen = container.classList.contains('open');
+  if (isOpen) {
+    container.classList.remove('open');
+    toggle.textContent = toggle.textContent.replace('[-]', '[+]').replace('Hide', 'Show');
+  } else {
+    container.classList.add('open');
+    toggle.textContent = toggle.textContent.replace('[+]', '[-]').replace('Show', 'Hide');
+  }
+}
+
 function _esc(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
@@ -1144,6 +1465,9 @@ function _createBlock(initialLatex = '', approx = null, focusAfter = false) {
         </div>
       </div>
       <div id="approx-${blockId}" class="approx-output" aria-live="polite"></div>
+      <div id="steps-toggle-${blockId}" class="steps-toggle" style="display:none;" onclick="_toggleSteps('${blockId}')"></div>
+      <div id="steps-container-${blockId}" class="steps-container"></div>
+      <div class="plot-container" id="plot-container-${blockId}"></div>
     </section>
   `;
   container.appendChild(el);
@@ -1441,6 +1765,7 @@ document.getElementById('app').addEventListener('scroll', () => {
   settings.assumeReal = _lsLoad(LS.ASSUME_REAL, false);
   settings.useDegrees = _lsLoad(LS.USE_DEGREES, false);
   settings.precision  = _lsLoad(LS.PRECISION, 10);
+  settings.stepsMode  = _lsLoad(LS.STEPS_MODE, 'off');
 
   // Load Notebook array
   let savedNotebook = _lsLoad(LS.INPUT, null);

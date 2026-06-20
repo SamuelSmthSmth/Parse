@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://unpkg.com/function-plot/dist/function-plot.js"></script>
+</head>
+<body>
+  <div id="plot"></div>
+  <script>
+    try {
+      functionPlot({
+        target: '#plot',
+        data: [{ fn: 'x^2' }]
+      });
+      console.log("SUCCESS");
+    } catch (e) {
+      console.error(e);
+      document.write(e.toString());
+    }
+  </script>
+</body>
+</html>
