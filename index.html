@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Live LaTeX Calculator</title>
+  <title>Parse | A Weird LaTeX CAS</title>
   <meta name="description" content="A live LaTeX calculator powered by Pyodide and SymPy. Type math, see results instantly." />
 
   <!-- KaTeX -->
@@ -337,6 +337,82 @@
       overflow-x: hidden;
       padding-bottom: 50vh; /* Allow scrolling past the last block */
       scroll-behavior: smooth;
+      opacity: 0;
+      transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    #app.ready {
+      opacity: 1;
+    }
+
+    #splash-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      pointer-events: none;
+      transform-origin: center center;
+      contain: strict;
+      transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      perspective: 1000px;
+      perspective-origin: 50% 50%;
+    }
+
+    #splash-screen.loaded {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .matrix-field {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .monolith-equation {
+      position: relative;
+      z-index: 2;
+      font-size: 2rem;
+      opacity: 0;
+      animation: centerZoomIn 4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    }
+
+    .solution-stream {
+      position: relative;
+      z-index: 2;
+      font-size: 1.2rem;
+      margin-top: 2rem;
+      opacity: 0;
+      color: rgba(255,255,255,0.7);
+      animation: centerZoomIn 4s cubic-bezier(0.2, 0.8, 0.2, 1) 0.4s forwards;
+    }
+
+    .splash-math {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      color: var(--fg);
+      white-space: nowrap;
+      will-change: transform, opacity;
+    }
+
+    @keyframes centerZoomIn {
+      0% { opacity: 0; transform: scale(0.95); clip-path: inset(0 100% 0 0); }
+      5% { opacity: 1; clip-path: inset(0 100% 0 0); }
+      25% { opacity: 1; clip-path: inset(0 0 0 0); }
+      100% { opacity: 1; transform: scale(1.08); clip-path: inset(0 0 0 0); }
+    }
+
+    @keyframes floatingDrift {
+      0% { opacity: 0; transform: translate3d(var(--offset-x), var(--offset-y), -1000px) scale(0.05); clip-path: inset(0 100% 0 0); }
+      15% { opacity: 0; clip-path: inset(0 100% 0 0); }
+      30% { opacity: 0.6; clip-path: inset(0 0 0 0); }
+      80% { opacity: 0.6; clip-path: inset(0 0 0 0); }
+      100% { opacity: 0; transform: translate3d(calc(var(--offset-x) * 4), calc(var(--offset-y) * 4), 300px) scale(8); clip-path: inset(0 0 0 0); }
     }
 
     #blocks-container {
@@ -449,7 +525,7 @@
     ════════════════════════════════════════════════════════════════ */
     #custom-caret {
       position: fixed;
-      z-index: 9999;
+      z-index: 10;
       width: 2px;
       border-radius: 2px;
       background: var(--caret-col);
@@ -836,7 +912,7 @@
     #help-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      z-index: 1000;
+      z-index: 10000;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -994,8 +1070,15 @@
 </head>
 <body>
 
+<!-- ── Splash Screen (Cinematic Intro) ────────────────────────────────── -->
+<div id="splash-screen">
+  <div class="matrix-field" id="matrix-field"></div>
+  <div class="monolith-equation" id="monolith-equation"></div>
+  <div class="solution-stream" id="solution-stream"></div>
+</div>
+
 <!-- ── Static chrome ──────────────────────────────────────────────────── -->
-<span id="corner-label" aria-hidden="true">LaTeX Calc</span>
+<span id="corner-label" aria-hidden="true">Parse</span>
 
 <div id="constants-panel">
   <!-- initial constant example -->
@@ -1554,6 +1637,16 @@ function _createWorker(i) {
       readyCount++;
       if (readyCount === WORKER_COUNT) {
         setWorkerStatus('ready');
+        
+        // Orchestrate the Splash Screen Ready Gate
+        const splash = document.getElementById('splash-screen');
+        const app = document.getElementById('app');
+        if (splash && app) {
+          splash.classList.add('loaded');
+          app.classList.add('ready');
+          setTimeout(() => { splash.remove(); }, 1800);
+        }
+
         // Initial boot eval:
         blocks.forEach(b => { if (b.latex.trim()) sendToWorker(b.id, b.latex); });
       }
@@ -1562,6 +1655,11 @@ function _createWorker(i) {
 
     if (data.status === 'init_error') {
       setWorkerStatus('error');
+      // Failsafe: Remove splash screen on hard error so the user isn't stuck
+      const splash = document.getElementById('splash-screen');
+      const app = document.getElementById('app');
+      if (splash) splash.remove();
+      if (app) app.classList.add('ready'); // Show UI anyway
       return;
     }
 
@@ -2024,6 +2122,7 @@ function _renderKatex(blockId, latex) {
     katexOut.innerHTML = `<span style="color:var(--err);">Rendering Error: ${_esc(err.message)}</span>`;
   }
   _fitOutput(blockId);
+  setTimeout(_updateCaret, 0); // Sync caret after DOM layout stabilizes
 }
 
 function _renderApprox(blockId, approxLatex) {
@@ -2543,6 +2642,7 @@ function _updateCaret() {
 
 document.addEventListener('selectionchange', _updateCaret);
 window.addEventListener('scroll', _updateCaret, { passive: true });
+window.addEventListener('resize', _updateCaret, { passive: true });
 document.getElementById('app').addEventListener('scroll', _updateCaret, { passive: true });
 
 
@@ -2589,6 +2689,59 @@ document.getElementById('app').addEventListener('scroll', () => {
 
 
 (function init() {
+  // Cinematic Intro Initialization
+  const splashScreen = document.getElementById('splash-screen');
+  const matrixField = document.getElementById('matrix-field');
+  const monolithEquation = document.getElementById('monolith-equation');
+  const solutionStream = document.getElementById('solution-stream');
+
+  if (splashScreen && matrixField && monolithEquation && solutionStream) {
+    // Act 1: The Monolith Equation
+    try {
+      katex.render("\\mathcal{L}\\{f(t)\\} = \\int_{0}^{\\infty} f(t) e^{-st} dt", monolithEquation, { displayMode: true });
+      // Act 2: The Solution Stream
+      katex.render("\\begin{aligned} &= \\lim_{R \\to \\infty} \\int_{0}^{R} f(t) e^{-st} dt \\\\ &= F(s) \\end{aligned}", solutionStream, { displayMode: true });
+    } catch(e) { console.warn('Failed to render splash math:', e); }
+
+    // Act 3: The Infinite Matrix Field
+    const fragments = [
+      "\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}",
+      "\\det(A - \\lambda I) = 0",
+      "\\oint_{\\partial \\Sigma} \\mathbf{E} \\cdot d\\mathbf{l}",
+      "e^{i\\pi} + 1 = 0",
+      "\\mathcal{F}\\{f(t)\\}",
+      "\\frac{\\partial^2 u}{\\partial x^2}",
+      "\\sum_{n=1}^{\\infty} \\frac{1}{n^2} = \\frac{\\pi^2}{6}",
+      "\\lim_{x \\to 0} \\frac{\\sin x}{x} = 1",
+      "\\nabla \\times \\mathbf{B} = \\mu_0 \\mathbf{J}",
+      "\\alpha", "\\beta", "\\gamma", "\\Delta", "\\Sigma", "\\Omega",
+      "x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}",
+      "\\iiint_V \\nabla \\cdot \\mathbf{F} \\, dV",
+      "P(A|B) = \\frac{P(B|A)P(A)}{P(B)}"
+    ];
+
+    for (let i = 0; i < 60; i++) {
+      const span = document.createElement('span');
+      span.className = 'splash-math';
+      
+      const offsetX = (Math.random() * 1000 - 500).toFixed(2) + 'px';
+      const offsetY = (Math.random() * 1000 - 500).toFixed(2) + 'px';
+      span.style.setProperty('--offset-x', offsetX);
+      span.style.setProperty('--offset-y', offsetY);
+      
+      const delay = (Math.random() * 4).toFixed(2);
+      const duration = (4 + Math.random() * 3).toFixed(2); // 4s to 7s
+      span.style.animation = `floatingDrift ${duration}s infinite linear ${delay}s`;
+      span.style.opacity = "0";
+      
+      const tex = fragments[Math.floor(Math.random() * fragments.length)];
+      try {
+        katex.render(tex, span, { displayMode: true, throwOnError: false, strict: false, trust: true });
+      } catch(e) {}
+      matrixField.appendChild(span);
+    }
+  }
+
   const savedTheme = _lsLoad(LS.THEME, 'dark');
   _applyTheme(savedTheme);
 
