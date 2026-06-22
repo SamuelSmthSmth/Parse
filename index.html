@@ -372,6 +372,22 @@
       flex-direction: column;
       gap: 0.6rem;
       min-height: 4rem;
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: visible;
+    }
+
+    /* Custom Scrollbar for Sleek UI */
+    ::-webkit-scrollbar {
+      height: 8px;
+      width: 8px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #555;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
     }
 
     /* ════════════════════════════════════════════════════════════════
@@ -664,11 +680,118 @@
       50%       { opacity: 0.15; }
     }
 
+    /* ════════════════════════════════════════════════════════════════
+       JULIA FALLBACK ENGINE — Inline timeout prompt
+    ════════════════════════════════════════════════════════════════ */
+    .julia-prompt {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1.1rem 1.4rem;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      font-family: var(--mono);
+      font-size: 0.83rem;
+      color: var(--fg-dim);
+      animation: julia-fade-in 0.25s var(--ease) both;
+    }
+    @keyframes julia-fade-in {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0);   }
+    }
+    .julia-prompt-icon {
+      font-size: 1.6rem;
+      line-height: 1;
+      filter: grayscale(0.2);
+    }
+    .julia-prompt-msg {
+      color: var(--fg);
+      text-align: center;
+      line-height: 1.5;
+    }
+    .julia-prompt-msg strong {
+      display: block;
+      font-size: 0.95rem;
+      margin-bottom: 0.2rem;
+      color: var(--caret-col);
+    }
+    .julia-prompt-actions {
+      display: flex;
+      gap: 0.6rem;
+      margin-top: 0.2rem;
+    }
+    .julia-btn {
+      padding: 0.35rem 0.9rem;
+      border-radius: 5px;
+      border: 1px solid var(--panel-border);
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      transition: all 0.15s var(--ease);
+      background: transparent;
+      color: var(--fg);
+    }
+    .julia-btn:hover {
+      border-color: var(--caret-col);
+      color: var(--caret-col);
+    }
+    .julia-btn-primary {
+      background: var(--caret-col);
+      color: var(--bg);
+      border-color: var(--caret-col);
+    }
+    .julia-btn-primary:hover {
+      opacity: 0.85;
+      color: var(--bg);
+    }
+    .julia-btn-primary:disabled {
+      opacity: 0.5;
+      cursor: wait;
+    }
+    .julia-status {
+      font-size: 0.78rem;
+      color: var(--fg-dim);
+      min-height: 1em;
+      text-align: center;
+    }
+
+    /* Computing hint shown immediately when dispatching */
+    .computing-hint {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--fg-dim);
+      opacity: 0;
+      animation: computing-hint-in 0.3s var(--ease) 0.3s forwards;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .computing-hint::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      border: 1.5px solid var(--fg-dim);
+      border-top-color: transparent;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes computing-hint-in {
+      to { opacity: 1; }
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
     /* ── Help Modal ── */
     #help-btn {
       position: fixed;
-      bottom: 1.2rem;
-      right: 5rem;
+      bottom: 3.5rem;
+      right: 1.4rem;
       z-index: 500;
       background: var(--panel-bg);
       border: 1px solid var(--panel-border);
@@ -691,7 +814,7 @@
     #help-btn:hover {
       opacity: 1;
       transform: scale(1.05);
-      border-color: var(--accent);
+      border-color: var(--caret-col);
     }
 
     #help-overlay {
@@ -724,7 +847,7 @@
     }
     #help-modal h2 {
       margin-top: 0;
-      color: var(--accent);
+      color: var(--caret-col);
       font-weight: 500;
     }
     #help-modal h3 {
@@ -892,7 +1015,6 @@
     <ul>
       <li><strong>Constants:</strong> Define global variables (e.g., a = 5) in the left panel to use them globally.</li>
       <li><strong>Graphing:</strong> Type any 1D function to automatically generate an interactive auto-scaling plot.</li>
-      <li><strong>Show Steps:</strong> Use the Command Palette to toggle "Steps Mode: Friendly" to see human-like calculus working out.</li>
     </ul>
   </div>
 </div>
@@ -973,14 +1095,14 @@ const MIRROR_PROPS = [
 
 /* ── LocalStorage keys ──────────────────────────────────────────────── */
 const LS = {
-  INPUT:       'latexcalc_input',
-  THEME:       'latexcalc_theme',
-  SHOW_APPROX: 'latexcalc_showApprox',
-  ASSUME_REAL: 'latexcalc_assumeReal',
-  USE_DEGREES: 'latexcalc_useDegrees',
-  PRECISION:   'latexcalc_precision',
-  STEPS_MODE:  'latexcalc_stepsMode',
-  ECHO_LATEX:  'latexcalc_echoLatex',
+  INPUT:          'latexcalc_input',
+  THEME:          'latexcalc_theme',
+  SHOW_APPROX:    'latexcalc_showApprox',
+  ASSUME_REAL:    'latexcalc_assumeReal',
+  USE_DEGREES:    'latexcalc_useDegrees',
+  PRECISION:      'latexcalc_precision',
+  ECHO_LATEX:     'latexcalc_echoLatex',
+  DEEP_SIMPLIFY:  'latexcalc_deepSimplify',
 };
 
 
@@ -989,12 +1111,12 @@ const LS = {
 ════════════════════════════════════════════════════════════════════════ */
 
 const settings = {
-  showApprox:  false,
-  assumeReal:  false,
-  useDegrees:  false,
-  precision:   10,
-  stepsMode:   'off',
-  echoLatex:   false
+  showApprox:    false,
+  assumeReal:    false,
+  useDegrees:    false,
+  precision:     10,
+  echoLatex:     false,
+  deepSimplify:  false,
 };
 
 /**
@@ -1143,7 +1265,6 @@ function _renderCmdResults() {
     const rootCmds = [
       { type: 'menu', id: 'themes', label: 'Themes...', keywords: 'theme color dark light' },
       { type: 'menu', id: 'settings', label: 'Settings...', keywords: 'settings approx assume angle precision' },
-      { type: 'menu', id: 'steps_mode', label: 'Steps Mode...', keywords: 'steps mode friendly raw off' },
       { type: 'cmd', label: `Clear Notebook`, keywords: 'clear notebook empty delete' }
     ];
     rootCmds.forEach(cmd => {
@@ -1188,20 +1309,10 @@ function _renderCmdResults() {
       { type: 'cmd', label: `Settings: Assume Real Variables (${settings.assumeReal ? 'ON' : 'OFF'})`, keywords: 'assume real variables setting' },
       { type: 'cmd', label: `Settings: Toggle Angles (${settings.useDegrees ? 'Degrees' : 'Radians'})`, keywords: 'angle degree radian setting' },
       { type: 'cmd', label: `Settings: Set Precision: 10`, keywords: 'precision decimals' },
-      { type: 'cmd', label: `Settings: Echo Typed LaTeX (${settings.echoLatex ? 'ON' : 'OFF'})`, keywords: 'echo render type typed latex setting' }
+      { type: 'cmd', label: `Settings: Echo Typed LaTeX (${settings.echoLatex ? 'ON' : 'OFF'})`, keywords: 'echo render type typed latex setting' },
+      { type: 'cmd', label: `Settings: Deep Simplify (${settings.deepSimplify ? 'ON' : 'OFF'})`, keywords: 'deep simplify heavy algebra sympy slow setting' }
     ];
     settingsCmds.forEach(cmd => {
-      if (!query || cmd.label.toLowerCase().includes(query) || cmd.keywords.includes(query)) _cmdItems.push(cmd);
-    });
-  } else if (_cmdCurrentMenu === 'steps_mode') {
-    cmdInput.placeholder = "Search steps mode...";
-    _cmdItems.push({ type: 'back', label: '< Back to Main Menu', keywords: '' });
-    const stepsCmds = [
-      { type: 'cmd', label: `Steps Mode: Off${settings.stepsMode === 'off' ? ' (Active)' : ''}`, keywords: 'off disabled' },
-      { type: 'cmd', label: `Steps Mode: Raw${settings.stepsMode === 'raw' ? ' (Active)' : ''}`, keywords: 'raw internal ast' },
-      { type: 'cmd', label: `Steps Mode: Friendly${settings.stepsMode === 'friendly' ? ' (Active)' : ''}`, keywords: 'friendly tutor manual' }
-    ];
-    stepsCmds.forEach(cmd => {
       if (!query || cmd.label.toLowerCase().includes(query) || cmd.keywords.includes(query)) _cmdItems.push(cmd);
     });
   }
@@ -1301,21 +1412,15 @@ function _executeCmd(item) {
           if (settings.echoLatex) _renderEcho(b.id, b.latex);
         }
       });
-    } else if (item.label.includes('Set Precision: 10')) {
-      settings.precision = 10;
-      _lsSave(LS.PRECISION, settings.precision);
+    } else if (item.label.includes('Deep Simplify')) {
+      settings.deepSimplify = !settings.deepSimplify;
+      _lsSave(LS.DEEP_SIMPLIFY, settings.deepSimplify);
       if (readyCount === WORKER_COUNT) {
         blocks.forEach(b => { if (b.latex.trim()) sendToWorker(b.id, b.latex); });
       }
-    } else if (item.label.includes('Steps Mode:')) {
-      if (item.label.includes('Off')) {
-        settings.stepsMode = 'off';
-      } else if (item.label.includes('Raw')) {
-        settings.stepsMode = 'raw';
-      } else if (item.label.includes('Friendly')) {
-        settings.stepsMode = 'friendly';
-      }
-      _lsSave(LS.STEPS_MODE, settings.stepsMode);
+    } else if (item.label.includes('Set Precision: 10')) {
+      settings.precision = 10;
+      _lsSave(LS.PRECISION, settings.precision);
       if (readyCount === WORKER_COUNT) {
         blocks.forEach(b => { if (b.latex.trim()) sendToWorker(b.id, b.latex); });
       }
@@ -1403,12 +1508,23 @@ function _createWorker(i) {
 
     const block = blocks.find(b => b.id === data.blockId);
     if (block) {
+      // Clear watchdog (soft) timer
       if (block.watchdogTimer) {
         clearTimeout(block.watchdogTimer);
         block.watchdogTimer = null;
       }
       _clearThinkingState(block.id);
-      
+
+      // If Pyodide finished AFTER the Julia offer was shown, dismiss it
+      if (block.juliaOfferShown) {
+        block.juliaOfferShown = false;
+        // Pyodide beat Julia — clear the offer card and render normally
+        const katexOut = document.getElementById(`out-${block.id}`);
+        if (katexOut && katexOut.querySelector('.julia-prompt')) {
+          katexOut.innerHTML = '<span class="output-hint">result appears here</span>';
+        }
+      }
+
       // Discard stale responses
       if (data.id === block.latestSeq) {
         _handleWorkerResponse(block, data);
@@ -1472,28 +1588,32 @@ function _processQueue() {
 function _dispatchToWorker(workerIndex, blockId, latex, seqId) {
   const workerObj = workers[workerIndex];
   workerObj.idle = false;
-  
+
   const block = blocks.find(b => b.id === blockId);
   if (block) {
     block.activeWorkerIndex = workerIndex;
-    _setThinkingState(blockId);
-    
+    block.juliaOfferShown   = false;
+
+    // ── Show immediate "Computing..." hint in the output pane ────────────────
+    const katexOut = document.getElementById(`out-${blockId}`);
+    if (katexOut) {
+      katexOut.innerHTML = '<span class="computing-hint">Computing…</span>';
+    }
+    const scaleOut = document.getElementById(`scale-out-${blockId}`);
+    if (scaleOut) scaleOut.style.transform = '';
+    _hideApprox(blockId);
+
+    // ── Soft 3-second timer: offer Julia without killing the worker ──────────
     if (block.watchdogTimer) clearTimeout(block.watchdogTimer);
     block.watchdogTimer = setTimeout(() => {
-      // The Executioner
-      console.warn(`Worker ${workerIndex} hung! Terminating and replacing...`);
-      workerObj.worker.terminate();
-      
-      readyCount = Math.max(0, readyCount - 1);
-      _createWorker(workerIndex);
-      
-      _clearThinkingState(blockId);
-      block.watchdogTimer = null;
-      _showError(blockId, "Computation Timeout: Expression intractable.");
-      
-    }, 5000);
+      // Only act if this worker is still running this block
+      if (!block.juliaOfferShown) {
+        block.juliaOfferShown = true;
+        _showJuliaPrompt(blockId, latex, workerIndex);
+      }
+    }, 3000);
   }
-  
+
   const constants = getGlobalConstants();
   console.log("Payload Constants:", constants);
 
@@ -1502,11 +1622,11 @@ function _dispatchToWorker(workerIndex, blockId, latex, seqId) {
     blockId: blockId,
     latexInput: latex,
     settings: { 
-      assumeReal: settings.assumeReal, 
-      useDegrees: settings.useDegrees, 
-      precision: settings.precision, 
-      stepsMode: settings.stepsMode,
-      context: constants
+      assumeReal:    settings.assumeReal, 
+      useDegrees:    settings.useDegrees, 
+      precision:     settings.precision, 
+      deepSimplify:  settings.deepSimplify,
+      context:       constants
     }
   });
 }
@@ -1542,9 +1662,85 @@ function _triggerAllBlocks() {
   });
 }
 
+/**
+ * _tryNumericFastPath(blockId, latex)
+ * ====================================
+ * Attempt to evaluate a purely numeric LaTeX expression directly on the
+ * main thread without any round-trip to the Pyodide worker pool.
+ *
+ * Strategy:
+ *   1. Translate common LaTeX numeric constructs to JS arithmetic syntax.
+ *   2. Reject if any letter remains — symbolic expressions go to Pyodide.
+ *   3. Evaluate with Function() in strict mode.
+ *   4. On success, render immediately and return true (caller should return).
+ *      On failure, return false (fall through to Pyodide dispatch).
+ *
+ * Handles: \frac{a}{b}, \sqrt{n}, \cdot, \times, \div, ^, \left(\right)
+ */
+function _tryNumericFastPath(blockId, latex) {
+  if (!latex || !latex.trim()) return false;
+
+  let expr = latex
+    // \frac{num}{den} → (num)/(den)
+    .replace(/\\frac\{([^{}]*)\}\{([^{}]*)\}/g, '($1)/($2)')
+    // \sqrt{n} → Math.sqrt(n)
+    .replace(/\\sqrt\{([^{}]*)\}/g, 'Math.sqrt($1)')
+    // \left( → (   \right) → )
+    .replace(/\\left\(/g, '(').replace(/\\right\)/g, ')')
+    .replace(/\\left\[/g, '(').replace(/\\right\]/g, ')')
+    // Operators
+    .replace(/\\cdot|\\times/g, '*')
+    .replace(/\\div/g, '/')
+    // Exponentiation
+    .replace(/\^/g, '**')
+    // Strip remaining LaTeX braces/commands
+    .replace(/[{}\\,]/g, ' ')
+    .trim();
+
+  // Reject: any letter remaining means a symbolic variable is present.
+  if (/[a-zA-Z]/.test(expr)) return false;
+
+  // Reject: empty after stripping
+  if (!expr) return false;
+
+  try {
+    // eslint-disable-next-line no-new-func
+    const val = Function('"use strict"; return (' + expr + ')')();
+    if (typeof val !== 'number' || !isFinite(val)) return false;
+
+    // Format: keep integers as integers; trim trailing zeros for decimals.
+    let display;
+    if (Number.isInteger(val)) {
+      display = String(val);
+    } else {
+      // Use up to 10 significant figures, strip trailing zeros.
+      display = val.toPrecision(10).replace(/\.?0+$/, '');
+    }
+
+    _renderKatex(blockId, display);
+    _hideApprox(blockId);
+    _clearThinkingState(blockId);
+
+    // Update the block's cached result
+    const block = blocks.find(b => b.id === blockId);
+    if (block) block.approx = null;
+
+    setWorkerStatus('ready', 'JS Native');
+
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 function sendToWorker(blockId, latex) {
   const block = blocks.find(b => b.id === blockId);
   if (!block) return;
+
+  // ── Numeric fast-path: bypass Pyodide for pure arithmetic ────────────────
+  // If the expression contains no symbolic variables (letters), evaluate it
+  // instantly on the main thread — zero worker round-trip latency.
+  if (_tryNumericFastPath(blockId, latex)) return;
 
   requestSequence++;
   block.latestSeq = requestSequence;
@@ -1562,9 +1758,13 @@ function sendToWorker(blockId, latex) {
   }
 }
 
-function setWorkerStatus(state) {
+function setWorkerStatus(state, engine = null) {
   workerBadge.setAttribute('data-state', state);
-  workerLabel.textContent = state;
+  if (state === 'ready' && engine) {
+    workerLabel.textContent = `ready (${engine})`;
+  } else {
+    workerLabel.textContent = state;
+  }
 }
 
 function _handleWorkerResponse(block, data) {
@@ -1581,25 +1781,7 @@ function _handleWorkerResponse(block, data) {
       _hideApprox(block.id);
     }
     
-    // ── Steps ────────────────────────────────────────────────────────────────
-    const stepsToggle = document.getElementById(`steps-toggle-${block.id}`);
-    const stepsContainer = document.getElementById(`steps-container-${block.id}`);
-    if (data.steps && data.steps.length > 0 && stepsToggle && stepsContainer) {
-      stepsToggle.style.display = 'block';
-      stepsToggle.textContent = `[+] Show Steps (${data.steps.length})`;
-      stepsContainer.innerHTML = '';
-      data.steps.forEach(stepLatex => {
-        const stepEl = document.createElement('div');
-        stepEl.className = 'step-item';
-        katex.render(stepLatex, stepEl, { displayMode: true, throwOnError: false });
-        stepsContainer.appendChild(stepEl);
-      });
-    } else if (stepsToggle && stepsContainer) {
-      stepsToggle.style.display = 'none';
-      stepsContainer.innerHTML = '';
-      stepsContainer.classList.remove('open');
-    }
-    
+    setWorkerStatus('ready', data.method || 'SymPy');
 
     // ── Graphing Engine ──────────────────────────────────────────────────────
     const plotContainer = document.getElementById(`plot-container-${block.id}`);
@@ -1672,7 +1854,24 @@ function _handleWorkerResponse(block, data) {
     _hideApprox(block.id);
   } else if (data.status === 'error') {
     _clearErrorGlow();
-    _showError(block.id, data.error ?? 'Evaluation error');
+    const errMsg = data.error ?? 'Evaluation error';
+    if (errMsg.includes("Cannot evaluate: No symbolic closed form") || errMsg.includes("NotImplementedError")) {
+      const katexOut = document.getElementById(`out-${block.id}`);
+      if (katexOut) {
+        katexOut.innerHTML = `
+          <div class="julia-prompt">
+            Cannot solve algebraically. 
+            <button class="julia-btn julia-btn-primary" id="julia-err-btn-${block.id}">Solve numerically via Julia Engine</button>
+          </div>
+        `;
+        document.getElementById(`julia-err-btn-${block.id}`).onclick = () => {
+          _runViaJulia(block.id, block.latex, block.activeWorkerIndex);
+        };
+      }
+      block.juliaOfferShown = true;
+    } else {
+      _showError(block.id, errMsg);
+    }
     _hideApprox(block.id);
   }
 }
@@ -1716,21 +1915,47 @@ function _renderEcho(blockId, latex) {
     echoOut.innerHTML = '';
     return;
   }
-  katex.render(latex, echoOut, {
-    throwOnError: false,
-    displayMode: true
-  });
+  try {
+    katex.render(latex, echoOut, {
+      throwOnError: false,
+      displayMode: true,
+      maxSize: 500,
+      maxExpand: 100000,
+      strict: false,
+      trust: true
+    });
+  } catch (err) {
+    echoOut.innerHTML = `<span style="color:var(--err);font-family:var(--mono);font-size:0.8em;">[Massive LaTeX Input]</span>`;
+  }
 }
 
 function _renderKatex(blockId, latex) {
   const katexOut = document.getElementById(`out-${blockId}`);
   if (!katexOut) return;
-  katex.render(latex, katexOut, {
-    displayMode:  true,
-    throwOnError: false,
-    output:       'html',
-    trust:        false,
-  });
+  try {
+    katex.render(latex, katexOut, {
+      displayMode:  true,
+      throwOnError: false,
+      output:       'html',
+      maxSize:      500,
+      maxExpand:    100000,
+      strict:       false,
+      trust:        true
+    });
+
+    const errSpan = katexOut.querySelector('.katex-error');
+    if (errSpan && (errSpan.title.includes('limit') || errSpan.title.includes('MaxExpand') || latex.length > 3000)) {
+       katexOut.innerHTML = `
+         <div style="padding:1rem; border:1px solid var(--border); border-radius:8px; background:var(--bg-panel); color:var(--fg-dim); font-size:0.9em; text-align:left;">
+           <strong style="color:var(--err);">⚠️ Expression Too Massive to Render</strong><br><br>
+           The engine successfully evaluated this, but it exceeds browser rendering limits.<br>
+           <div style="margin-top:0.5rem; max-height:150px; overflow-y:auto; font-family:var(--mono); font-size:0.85em; background:var(--bg-body); padding:0.5rem; border-radius:4px; white-space:pre-wrap; word-break:break-all;">${_esc(latex)}</div>
+         </div>
+       `;
+    }
+  } catch (err) {
+    katexOut.innerHTML = `<span style="color:var(--err);">Rendering Error: ${_esc(err.message)}</span>`;
+  }
   _fitOutput(blockId);
 }
 
@@ -1742,7 +1967,10 @@ function _renderApprox(blockId, approxLatex) {
       displayMode:  false,
       throwOnError: false,
       output:       'html',
-      trust:        false,
+      maxSize:      500,
+      maxExpand:    100000,
+      strict:       false,
+      trust:        true
     });
     approxOut.classList.add('visible');
   } catch(_) {
@@ -1773,19 +2001,173 @@ function _showError(blockId, msg) {
 }
 
 
-function _toggleSteps(blockId) {
-  const container = document.getElementById(`steps-container-${blockId}`);
-  const toggle = document.getElementById(`steps-toggle-${blockId}`);
-  if (!container || !toggle) return;
-  const isOpen = container.classList.contains('open');
-  if (isOpen) {
-    container.classList.remove('open');
-    toggle.textContent = toggle.textContent.replace('[-]', '[+]').replace('Hide', 'Show');
-  } else {
-    container.classList.add('open');
-    toggle.textContent = toggle.textContent.replace('[+]', '[-]').replace('Show', 'Hide');
+/* ════════════════════════════════════════════════════════════════════════
+   SECTION — JULIA HEAVY COMPUTE FALLBACK ENGINE
+════════════════════════════════════════════════════════════════════════ */
+
+const JULIA_URL = 'http://127.0.0.1:8001/solve';
+
+/**
+ * _showJuliaPrompt(blockId, latex, workerIndex)
+ * ===============================================
+ * Injects a "Still computing" card into the output pane, offering to switch
+ * to the local Julia engine. Pyodide CONTINUES running in the background.
+ * If Pyodide finishes before the user clicks, the offer is auto-dismissed.
+ *
+ * @param {string} blockId      - The block whose computation is slow.
+ * @param {string} latex        - The raw LaTeX expression.
+ * @param {number} workerIndex  - Worker currently handling this block.
+ */
+function _showJuliaPrompt(blockId, latex, workerIndex) {
+  const katexOut    = document.getElementById(`out-${blockId}`);
+  const outputScale = document.getElementById(`scale-out-${blockId}`);
+  if (!katexOut || !outputScale) return;
+
+  outputScale.style.transform = '';
+  _hideApprox(blockId);
+
+  katexOut.innerHTML = `
+    <div class="julia-prompt" id="julia-prompt-${blockId}">
+      <div class="julia-prompt-icon">⏳</div>
+      <div class="julia-prompt-msg">
+        <strong>Still computing…</strong>
+        Pyodide is still running in the background.<br>
+        Switch to the <em>local Julia engine</em> for a faster result?
+      </div>
+      <div class="julia-prompt-actions">
+        <button
+          class="julia-btn julia-btn-primary"
+          id="julia-run-${blockId}"
+        >Switch to Julia</button>
+        <button
+          class="julia-btn"
+          id="julia-dismiss-${blockId}"
+        >Keep waiting</button>
+      </div>
+      <div class="julia-status" id="julia-status-${blockId}"></div>
+    </div>
+  `;
+
+  const runBtn     = document.getElementById(`julia-run-${blockId}`);
+  const dismissBtn = document.getElementById(`julia-dismiss-${blockId}`);
+  if (runBtn)     runBtn.onclick     = () => _runViaJulia(blockId, latex, workerIndex);
+  if (dismissBtn) dismissBtn.onclick = () => _dismissJuliaPrompt(blockId);
+}
+
+/**
+ * _dismissJuliaPrompt(blockId)
+ * Restores the "Computing..." spinner if the user clicks "Keep waiting".
+ */
+function _dismissJuliaPrompt(blockId) {
+  const katexOut = document.getElementById(`out-${blockId}`);
+  if (katexOut) {
+    katexOut.innerHTML = '<span class="computing-hint">Computing…</span>';
+  }
+  const block = blocks.find(b => b.id === blockId);
+  if (block) block.juliaOfferShown = false;
+}
+
+
+/**
+ * _runViaJulia(blockId, latex)
+ * =============================
+ * Posts the LaTeX expression to the local Julia server at JULIA_URL.
+ * Handles the full lifecycle: loading state → success render → error fallback.
+ *
+ * Expected server response shape:
+ *   { result: "<latex string>", method: "symbolic" | "numeric" }
+ *   { error: "<message>" }
+ *
+ * @param {string} blockId - The block to render the result into.
+ * @param {string} latex   - The raw LaTeX expression.
+ */
+async function _runViaJulia(blockId, latex, workerIndex) {
+  const block = blocks.find(b => b.id === blockId);
+  if (block) {
+    if (block.watchdogTimer) {
+      clearTimeout(block.watchdogTimer);
+      block.watchdogTimer = null;
+    }
+  }
+
+  // ── Terminate the Pyodide worker immediately to free CPU ──────────────────
+  if (workerIndex !== undefined && workers[workerIndex]) {
+    console.log(`[Julia] Terminating worker ${workerIndex} — handing off to Julia`);
+    workers[workerIndex].worker.terminate();
+    readyCount = Math.max(0, readyCount - 1);
+    _createWorker(workerIndex);
+  }
+
+  // ── Loading state: Update UI to explicitly say "Julia Engine: Computing..."
+  const katexOut = document.getElementById(`out-${blockId}`);
+  if (katexOut) {
+    katexOut.innerHTML = '<span class="computing-hint">Julia Engine: Computing…</span>';
+  }
+
+  try {
+    const resp = await fetch(JULIA_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ expression: latex })
+    });
+
+    if (!resp.ok) {
+      throw new Error(`Julia server responded ${resp.status} ${resp.statusText}`);
+    }
+
+    const data = await resp.json();
+
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    if (!data.result) {
+      throw new Error('Julia returned an empty result.');
+    }
+
+    // ── Success: render the returned LaTeX ────────────────────────────────────
+    _renderKatex(blockId, data.result);
+    _hideApprox(blockId);
+
+    if (block) {
+      block.approx = null;
+      block.juliaOfferShown = false;
+      if (block.watchdogTimer) {
+        clearTimeout(block.watchdogTimer);
+        block.watchdogTimer = null;
+      }
+    }
+    const prompt = document.getElementById(`julia-prompt-${blockId}`);
+    if (prompt) prompt.remove();
+
+    setWorkerStatus('ready', `Julia · ${data.method || 'symbolic'}`);
+
+  } catch (err) {
+    // ── Fallback error handling in KaTeX output area ──────────────────────────
+    const isNetworkErr = err.name === 'TypeError' || err.name === 'AbortError';
+    const isTimeout    = err.message.includes('408') || err.message.toLowerCase().includes('timeout');
+    
+    let hint = err.message;
+    if (isNetworkErr) {
+      hint = "Julia server not reachable. Is 'julia server.jl' running?";
+    } else if (isTimeout) {
+      hint = "Computation exceeded the 20s safety limit.";
+    }
+    
+    _showError(blockId, `Julia Engine Error: ${hint}`);
+
+    if (block) {
+      block.juliaOfferShown = false;
+      if (block.watchdogTimer) {
+        clearTimeout(block.watchdogTimer);
+        block.watchdogTimer = null;
+      }
+    }
+    const prompt = document.getElementById(`julia-prompt-${blockId}`);
+    if (prompt) prompt.remove();
   }
 }
+
 
 function _esc(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -1835,8 +2217,6 @@ function _createBlock(initialLatex = '', approx = null, focusAfter = false) {
         </div>
       </div>
       <div id="approx-${blockId}" class="approx-output" aria-live="polite"></div>
-      <div id="steps-toggle-${blockId}" class="steps-toggle" style="display:none;" onclick="_toggleSteps('${blockId}')"></div>
-      <div id="steps-container-${blockId}" class="steps-container"></div>
       <div class="plot-container" id="plot-container-${blockId}"></div>
     </section>
   `;
@@ -2006,7 +2386,7 @@ function _fitOutput(blockId) {
 
   const contentW  = katexOut.scrollWidth;
   const available = pane.clientWidth * SAFE_MARGIN;
-  const scale     = contentW > available ? available / contentW : 1;
+  const scale     = contentW > available ? Math.max(available / contentW, 0.5) : 1;
   scaleWrapper.style.transform = scale < 1 ? `scale(${scale.toFixed(5)})` : '';
 }
 
@@ -2137,12 +2517,12 @@ document.getElementById('app').addEventListener('scroll', () => {
   const savedTheme = _lsLoad(LS.THEME, 'dark');
   _applyTheme(savedTheme);
 
-  settings.showApprox = _lsLoad(LS.SHOW_APPROX, false);
-  settings.assumeReal = _lsLoad(LS.ASSUME_REAL, false);
-  settings.useDegrees = _lsLoad(LS.USE_DEGREES, false);
-  settings.precision  = _lsLoad(LS.PRECISION, 10);
-  settings.stepsMode  = _lsLoad(LS.STEPS_MODE, 'off');
-  settings.echoLatex  = _lsLoad(LS.ECHO_LATEX, false);
+  settings.showApprox   = _lsLoad(LS.SHOW_APPROX,   false);
+  settings.assumeReal   = _lsLoad(LS.ASSUME_REAL,   false);
+  settings.useDegrees   = _lsLoad(LS.USE_DEGREES,   false);
+  settings.precision    = _lsLoad(LS.PRECISION,     10);
+  settings.echoLatex    = _lsLoad(LS.ECHO_LATEX,    false);
+  settings.deepSimplify = _lsLoad(LS.DEEP_SIMPLIFY, false);
 
   // Load Notebook array
   let savedNotebook = _lsLoad(LS.INPUT, null);

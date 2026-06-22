@@ -38,6 +38,19 @@ async function init() {
   const micropip = pyodide.pyimport("micropip");
   await micropip.install("antlr4-python3-runtime==4.11");
 
+  // ── Stretch goal: SymEngine C++ backend ────────────────────────────────────
+  // symengine ships a WASM-compatible wheel only for some Pyodide versions.
+  // We try silently; the Python backend detects _HAS_SYMENGINE and falls back
+  // to SymPy if unavailable — zero risk to the app's correctness.
+  self.postMessage({ status: "progress", step: "Checking SymEngine..." });
+  try {
+    await micropip.install("symengine");
+    pyodide.runPython("_HAS_SYMENGINE = True");
+    self.postMessage({ status: "progress", step: "SymEngine loaded ✓" });
+  } catch (_) {
+    pyodide.runPython("_HAS_SYMENGINE = False");
+  }
+
   self.postMessage({ status: "progress", step: "Loading python backend..." });
   const src = await fetch("latex_calculator.py?v=" + Date.now(), { cache: "no-store" }).then(r => {
     if (!r.ok) throw new Error(`Failed to load latex_calculator.py: ${r.status}`);
