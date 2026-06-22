@@ -281,6 +281,12 @@
       color: var(--fg);
       font-size: clamp(1.2rem, 3vw, 2.2rem);
     }
+    .katex-echo {
+      font-size: 0.9em;
+      color: var(--fg-dim);
+      text-align: center;
+      margin-bottom: 0.75rem;
+    }
 
     .katex { color: inherit !important; }
     .katex-display { margin: 0 !important; overflow: visible !important; }
@@ -477,6 +483,92 @@
       50%       { opacity: 0.15; }
     }
 
+    /* ── Help Modal ── */
+    #help-btn {
+      position: fixed;
+      bottom: 1.1rem;
+      right: 5rem;
+      z-index: 500;
+      background: transparent;
+      border: none;
+      color: var(--fg);
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      opacity: 0.5;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    #help-btn:hover {
+      opacity: 1;
+    }
+
+    #help-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.2);
+      backdrop-filter: blur(5px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s var(--ease);
+    }
+    #help-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    #help-modal {
+      background: var(--bg);
+      color: var(--fg);
+      padding: 2rem;
+      width: 90%;
+      max-width: 500px;
+      border-radius: 8px;
+      font-family: var(--sans);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      position: relative;
+    }
+    #help-modal h2 {
+      margin-top: 0;
+      color: var(--accent);
+      font-weight: 500;
+    }
+    #help-modal h3 {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--fg-dim);
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    #help-modal p, #help-modal ul {
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+    #help-modal ul {
+      padding-left: 1.2rem;
+      margin: 0;
+    }
+    #help-modal li {
+      margin-bottom: 0.4rem;
+    }
+    #help-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: transparent;
+      border: none;
+      color: var(--fg-dim);
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 1rem;
+    }
+    #help-close:hover {
+      color: var(--fg);
+    }
+
     /* ════════════════════════════════════════════════════════════════
        COMMAND PALETTE
     ════════════════════════════════════════════════════════════════ */
@@ -589,6 +681,30 @@
   <span id="worker-label">loading</span>
 </div>
 
+<button id="help-btn" onclick="openHelp()" aria-label="Help">[ help ]</button>
+
+<div id="help-overlay" onclick="closeHelp(event)">
+  <div id="help-modal" onclick="event.stopPropagation()">
+    <button id="help-close" onclick="closeHelp(event)" aria-label="Close Help">[x]</button>
+    <h2>LaTeX Calc</h2>
+    <p>A multi-threaded, realtime LaTeX Computer Algebra System.</p>
+    
+    <h3>Keyboard Shortcuts</h3>
+    <ul>
+      <li><strong>Shift + Enter:</strong> Spawn a new calculation block.</li>
+      <li><strong>Cmd + K (or Ctrl + K):</strong> Open the Command Palette (Themes, Settings, Actions).</li>
+      <li><strong>Esc:</strong> Close palettes and modals.</li>
+    </ul>
+
+    <h3>Pro Tips</h3>
+    <ul>
+      <li><strong>Constants:</strong> Define global variables (e.g., a = 5) in the left panel to use them globally.</li>
+      <li><strong>Graphing:</strong> Type any 1D function to automatically generate an interactive auto-scaling plot.</li>
+      <li><strong>Show Steps:</strong> Use the Command Palette to toggle "Steps Mode: Friendly" to see human-like calculus working out.</li>
+    </ul>
+  </div>
+</div>
+
 <!-- ── Custom caret (JS-positioned) ─────────────────────────────────── -->
 <div id="custom-caret" aria-hidden="true"></div>
 
@@ -669,6 +785,10 @@ const LS = {
   THEME:       'latexcalc_theme',
   SHOW_APPROX: 'latexcalc_showApprox',
   ASSUME_REAL: 'latexcalc_assumeReal',
+  USE_DEGREES: 'latexcalc_useDegrees',
+  PRECISION:   'latexcalc_precision',
+  STEPS_MODE:  'latexcalc_stepsMode',
+  ECHO_LATEX:  'latexcalc_echoLatex',
 };
 
 
@@ -681,7 +801,8 @@ const settings = {
   assumeReal:  false,
   useDegrees:  false,
   precision:   10,
-  stepsMode:   'off'
+  stepsMode:   'off',
+  echoLatex:   false
 };
 
 /**
@@ -764,11 +885,32 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     _cmdOpen ? _closePalette() : _openPalette();
   }
-  if (e.key === 'Escape' && _cmdOpen) {
-    e.preventDefault();
-    _closePalette();
+  if (e.key === 'Escape') {
+    if (_cmdOpen) {
+      e.preventDefault();
+      _closePalette();
+    }
+    const helpOverlay = document.getElementById('help-overlay');
+    if (helpOverlay && helpOverlay.classList.contains('open')) {
+      e.preventDefault();
+      closeHelp();
+    }
   }
 });
+
+let _helpSavedFocus = null;
+function openHelp() {
+  _helpSavedFocus = document.activeElement;
+  document.getElementById('help-overlay').classList.add('open');
+}
+function closeHelp(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('help-overlay').classList.remove('open');
+  if (_helpSavedFocus) {
+    _helpSavedFocus.focus();
+    _helpSavedFocus = null;
+  }
+}
 
 cmdOverlay.addEventListener('mousedown', (e) => {
   if (e.target === cmdOverlay) _closePalette();
@@ -842,7 +984,8 @@ function _renderCmdResults() {
       { type: 'cmd', label: `Settings: Show Approximations (${settings.showApprox ? 'ON' : 'OFF'})`, keywords: 'approx decimal setting' },
       { type: 'cmd', label: `Settings: Assume Real Variables (${settings.assumeReal ? 'ON' : 'OFF'})`, keywords: 'assume real variables setting' },
       { type: 'cmd', label: `Settings: Toggle Angles (${settings.useDegrees ? 'Degrees' : 'Radians'})`, keywords: 'angle degree radian setting' },
-      { type: 'cmd', label: `Settings: Set Precision: 10`, keywords: 'precision decimals' }
+      { type: 'cmd', label: `Settings: Set Precision: 10`, keywords: 'precision decimals' },
+      { type: 'cmd', label: `Settings: Echo Typed LaTeX (${settings.echoLatex ? 'ON' : 'OFF'})`, keywords: 'echo render type typed latex setting' }
     ];
     settingsCmds.forEach(cmd => {
       if (!query || cmd.label.toLowerCase().includes(query) || cmd.keywords.includes(query)) _cmdItems.push(cmd);
@@ -945,6 +1088,16 @@ function _executeCmd(item) {
       if (readyCount === WORKER_COUNT) {
         blocks.forEach(b => { if (b.latex.trim()) sendToWorker(b.id, b.latex); });
       }
+    } else if (item.label.includes('Echo Typed LaTeX')) {
+      settings.echoLatex = !settings.echoLatex;
+      _lsSave(LS.ECHO_LATEX, settings.echoLatex);
+      blocks.forEach(b => {
+        const echoDiv = document.getElementById(`echo-out-${b.id}`);
+        if (echoDiv) {
+          echoDiv.style.display = settings.echoLatex ? 'block' : 'none';
+          if (settings.echoLatex) _renderEcho(b.id, b.latex);
+        }
+      });
     } else if (item.label.includes('Set Precision: 10')) {
       settings.precision = 10;
       _lsSave(LS.PRECISION, settings.precision);
@@ -1014,7 +1167,7 @@ let requestSequence = 0;
 const pendingQueue = new Map();
 
 function _createWorker(i) {
-  const w = new Worker('worker.js?v=4');
+  const w = new Worker('worker.js?v=' + Date.now());
   if (!workers[i]) workers[i] = { worker: null, idle: true };
   workers[i].worker = w;
   workers[i].idle = true;
@@ -1353,6 +1506,19 @@ function _clearErrorGlow() {
    SECTION 7 — RENDERING
 ════════════════════════════════════════════════════════════════════════ */
 
+function _renderEcho(blockId, latex) {
+  const echoOut = document.getElementById(`echo-out-${blockId}`);
+  if (!echoOut) return;
+  if (!latex.trim()) {
+    echoOut.innerHTML = '';
+    return;
+  }
+  katex.render(latex, echoOut, {
+    throwOnError: false,
+    displayMode: true
+  });
+}
+
 function _renderKatex(blockId, latex) {
   const katexOut = document.getElementById(`out-${blockId}`);
   if (!katexOut) return;
@@ -1460,6 +1626,7 @@ function _createBlock(initialLatex = '', approx = null, focusAfter = false) {
     </section>
     <section class="pane pane-output" aria-label="Rendered result">
       <div class="scale-wrapper" id="scale-out-${blockId}">
+        <div id="echo-out-${blockId}" class="katex-echo" aria-live="polite" style="display: ${settings.echoLatex ? 'block' : 'none'};"></div>
         <div id="out-${blockId}" class="katex-output" role="math" aria-live="polite">
           <span class="output-hint">result appears here</span>
         </div>
@@ -1483,6 +1650,10 @@ function _createBlock(initialLatex = '', approx = null, focusAfter = false) {
 
   _resizeHeight(ta);
   _fitInput(blockId);
+
+  if (settings.echoLatex && initialLatex.trim()) {
+    _renderEcho(blockId, initialLatex);
+  }
   
   if (focusAfter) {
     ta.focus();
@@ -1545,6 +1716,8 @@ function _bindBlockEvents(blockId, ta) {
     const block = blocks.find(b => b.id === blockId);
     if (block) block.latex = ta.value;
     _saveNotebook();
+
+    if (settings.echoLatex) _renderEcho(blockId, ta.value);
 
     if (!ta.value.trim()) {
       _showHint(blockId);
@@ -1766,6 +1939,7 @@ document.getElementById('app').addEventListener('scroll', () => {
   settings.useDegrees = _lsLoad(LS.USE_DEGREES, false);
   settings.precision  = _lsLoad(LS.PRECISION, 10);
   settings.stepsMode  = _lsLoad(LS.STEPS_MODE, 'off');
+  settings.echoLatex  = _lsLoad(LS.ECHO_LATEX, false);
 
   // Load Notebook array
   let savedNotebook = _lsLoad(LS.INPUT, null);

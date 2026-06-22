@@ -211,7 +211,8 @@ def _preprocess(s: str) -> str:
     # ── Rule 3: \operatorname{name} ──────────────────────────────────────────
     def _sub_opname(m: re.Match) -> str:
         name = m.group(1).strip()
-        return _OPNAME_MAP.get(name, m.group(0))
+        res = _OPNAME_MAP.get(name)
+        return res if res is not None else str(m.group(0))
 
     s = re.sub(r'\\operatorname\{([^}]+)\}', _sub_opname, s)
 
