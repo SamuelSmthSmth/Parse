@@ -641,12 +641,19 @@
     #theme-toggle:hover  { color: var(--fg); background: var(--pill-border); }
     #theme-toggle:active { transform: scale(0.95); }
 
-    /* ── Worker status badge (bottom-right) ── */
-    #worker-badge {
+    /* ── Worker status badges (bottom-right) ── */
+    #badges-container {
       position: fixed;
       bottom: 1.1rem;
       right: 1.4rem;
       z-index: 500;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.5rem;
+    }
+
+    #worker-badge, #julia-badge {
       display: flex;
       align-items: center;
       gap: 0.45rem;
@@ -657,7 +664,7 @@
       transition: color 0.4s;
     }
 
-    #worker-dot {
+    #worker-dot, #julia-dot {
       flex-shrink: 0;
       width: 5px;
       height: 5px;
@@ -674,6 +681,15 @@
       box-shadow: 0 0 7px #4ade8099;
     }
     #worker-badge[data-state="error"] { color: var(--err); }
+
+    #julia-badge[data-state="connected"] { color: #4ade80; }
+    #julia-badge[data-state="connected"] #julia-dot {
+      box-shadow: 0 0 7px #4ade8099;
+    }
+    #julia-badge[data-state="offline"] { color: var(--err); }
+    #julia-badge[data-state="offline"] #julia-dot {
+      box-shadow: 0 0 7px var(--caret-err-glow);
+    }
 
     @keyframes dot-pulse {
       0%, 100% { opacity: 1; }
@@ -824,25 +840,27 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(0,0,0,0.2);
-      backdrop-filter: blur(5px);
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.2s var(--ease);
+      transition: opacity 0.3s var(--ease);
     }
     #help-overlay.open {
       opacity: 1;
       pointer-events: auto;
     }
     #help-modal {
-      background: var(--bg);
+      background: var(--panel-bg);
       color: var(--fg);
-      padding: 2rem;
+      padding: 2.5rem;
       width: 90%;
-      max-width: 500px;
-      border-radius: 8px;
+      max-width: 600px;
+      border-radius: 16px;
+      border: 1px solid var(--panel-border);
       font-family: var(--sans);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.4);
       position: relative;
     }
     #help-modal h2 {
@@ -991,9 +1009,15 @@
 
 <button id="theme-toggle" aria-label="Toggle light/dark mode">Light</button>
 
-<div id="worker-badge" data-state="loading" role="status" aria-live="polite">
-  <div id="worker-dot"></div>
-  <span id="worker-label">loading</span>
+<div id="badges-container">
+  <div id="julia-badge" data-state="offline" role="status" aria-live="polite">
+    <div id="julia-dot"></div>
+    <span id="julia-label">Local Engine: Offline</span>
+  </div>
+  <div id="worker-badge" data-state="loading" role="status" aria-live="polite">
+    <div id="worker-dot"></div>
+    <span id="worker-label">loading</span>
+  </div>
 </div>
 
 <button id="help-btn" onclick="openHelp()" aria-label="Help">?</button>
@@ -1001,20 +1025,35 @@
 <div id="help-overlay" onclick="closeHelp(event)">
   <div id="help-modal" onclick="event.stopPropagation()">
     <button id="help-close" onclick="closeHelp(event)" aria-label="Close Help">[x]</button>
-    <h2>LaTeX Calc</h2>
-    <p>A multi-threaded, realtime LaTeX Computer Algebra System.</p>
+    <h2>LaTeX Calc Architecture</h2>
+    <p>A multi-threaded, realtime LaTeX Computer Algebra System powered by a dual-engine architecture.</p>
     
-    <h3>Keyboard Shortcuts</h3>
+    <h3>1. Browser Engine</h3>
+    <p>Runs standard calculus and algebra directly in your browser using Pyodide and SymPy. It is fast, lightweight, and requires no installation.</p>
+
+    <h3>2. Desktop Engine (Optional)</h3>
+    <p>For massive matrix determinants, differential equations, and heavy numerical root finding, connect our native Julia companion app for unlimited compute power.</p>
+
+    <h3>How to install the Desktop Engine</h3>
+    <div style="margin: 1.5rem 0;">
+      <a href="/julia-desktop-engine.zip" download class="julia-btn julia-btn-primary" style="text-decoration: none; display: inline-block; text-align: center;">Download Desktop Engine Package (.zip)</a>
+    </div>
     <ul>
-      <li><strong>Shift + Enter:</strong> Spawn a new calculation block.</li>
-      <li><strong>Cmd + K (or Ctrl + K):</strong> Open the Command Palette (Themes, Settings, Actions).</li>
-      <li><strong>Esc:</strong> Close palettes and modals.</li>
+      <li><strong>Step 1:</strong> Install Julia from <a href="https://julialang.org/downloads/" target="_blank" style="color:var(--caret-col);text-decoration:none;">julialang.org</a></li>
+      <li><strong>Step 2:</strong> Extract the downloaded <code>julia-desktop-engine.zip</code> file.</li>
+      <li><strong>Step 3:</strong> Launch the engine:
+        <ul style="margin-top: 0.5rem;">
+          <li><strong>Windows:</strong> Double-click <code>launcher.bat</code></li>
+          <li><strong>Mac/Linux:</strong> Open terminal, run <code>chmod +x launcher.sh</code>, then <code>./launcher.sh</code></li>
+        </ul>
+      </li>
     </ul>
 
-    <h3>Pro Tips</h3>
+    <h3>Keyboard Shortcuts & Tips</h3>
     <ul>
-      <li><strong>Constants:</strong> Define global variables (e.g., a = 5) in the left panel to use them globally.</li>
-      <li><strong>Graphing:</strong> Type any 1D function to automatically generate an interactive auto-scaling plot.</li>
+      <li><strong>Shift + Enter:</strong> Spawn a new calculation block.</li>
+      <li><strong>Cmd + K:</strong> Open the Command Palette.</li>
+      <li><strong>Constants:</strong> Define global variables (e.g., a = 5) in the left panel.</li>
     </ul>
   </div>
 </div>
@@ -1077,6 +1116,28 @@ const themeBtn      = document.getElementById('theme-toggle');
 const workerBadge   = document.getElementById('worker-badge');
 const workerLabel   = document.getElementById('worker-label');
 
+/* ── Engine Health State ────────────────────────────────────────────── */
+let juliaEngineConnected = false;
+
+function _pollJuliaEngine() {
+  fetch('http://127.0.0.1:8001/health')
+    .then(r => {
+      if (r.ok) {
+        juliaEngineConnected = true;
+        document.getElementById('julia-badge').setAttribute('data-state', 'connected');
+        document.getElementById('julia-label').textContent = 'Local Engine: Connected';
+      } else {
+        throw new Error('Not OK');
+      }
+    })
+    .catch(() => {
+      juliaEngineConnected = false;
+      document.getElementById('julia-badge').setAttribute('data-state', 'offline');
+      document.getElementById('julia-label').textContent = 'Local Engine: Offline';
+    });
+}
+setInterval(_pollJuliaEngine, 5000);
+_pollJuliaEngine(); // Initial poll
 
 /* ── Tuning constants ───────────────────────────────────────────────── */
 const SAFE_MARGIN  = 0.88;
@@ -1861,11 +1922,17 @@ function _handleWorkerResponse(block, data) {
         katexOut.innerHTML = `
           <div class="julia-prompt">
             Cannot solve algebraically. 
-            <button class="julia-btn julia-btn-primary" id="julia-err-btn-${block.id}">Solve numerically via Julia Engine</button>
+            <button class="julia-btn julia-btn-primary" id="julia-err-btn-${block.id}">
+              ${juliaEngineConnected ? 'Solve numerically via Julia Engine' : 'Math too complex for browser. Install Desktop Engine to solve.'}
+            </button>
           </div>
         `;
         document.getElementById(`julia-err-btn-${block.id}`).onclick = () => {
-          _runViaJulia(block.id, block.latex, block.activeWorkerIndex);
+          if (juliaEngineConnected) {
+            _runViaJulia(block.id, block.latex, block.activeWorkerIndex);
+          } else {
+            openHelp();
+          }
         };
       }
       block.juliaOfferShown = true;
@@ -2032,13 +2099,13 @@ function _showJuliaPrompt(blockId, latex, workerIndex) {
       <div class="julia-prompt-msg">
         <strong>Still computing…</strong>
         Pyodide is still running in the background.<br>
-        Switch to the <em>local Julia engine</em> for a faster result?
+        ${juliaEngineConnected ? 'Switch to the <em>local Julia engine</em> for a faster result?' : 'For massive computations, install the Desktop Engine.'}
       </div>
       <div class="julia-prompt-actions">
         <button
           class="julia-btn julia-btn-primary"
           id="julia-run-${blockId}"
-        >Switch to Julia</button>
+        >${juliaEngineConnected ? 'Switch to Julia' : 'Math too complex for browser. Install Desktop Engine to solve.'}</button>
         <button
           class="julia-btn"
           id="julia-dismiss-${blockId}"
@@ -2050,7 +2117,15 @@ function _showJuliaPrompt(blockId, latex, workerIndex) {
 
   const runBtn     = document.getElementById(`julia-run-${blockId}`);
   const dismissBtn = document.getElementById(`julia-dismiss-${blockId}`);
-  if (runBtn)     runBtn.onclick     = () => _runViaJulia(blockId, latex, workerIndex);
+  if (runBtn) {
+    runBtn.onclick = () => {
+      if (juliaEngineConnected) {
+        _runViaJulia(blockId, latex, workerIndex);
+      } else {
+        openHelp();
+      }
+    };
+  }
   if (dismissBtn) dismissBtn.onclick = () => _dismissJuliaPrompt(blockId);
 }
 
