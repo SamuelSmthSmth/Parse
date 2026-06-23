@@ -69,75 +69,293 @@
       opacity: 1;
     }
 
+    /* ── SPLASH SCREEN — Premium Cinematic Intro ─────────────── */
+
     #splash-screen {
       position: fixed;
       inset: 0;
       z-index: 10000;
-      background: var(--bg);
+      background: #050508;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       overflow: hidden;
-      pointer-events: none;
-      transform-origin: center center;
-      contain: strict;
-      transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-      perspective: 1000px;
-      perspective-origin: 50% 50%;
+      pointer-events: all;
     }
 
     #splash-screen.loaded {
-      opacity: 0;
-      pointer-events: none;
+      animation: splashFadeOut 0.9s cubic-bezier(0.4, 0, 1, 1) forwards;
     }
 
+    @keyframes splashFadeOut {
+      0%   { opacity: 1; transform: scale(1); }
+      60%  { opacity: 1; transform: scale(1.04); }
+      100% { opacity: 0; transform: scale(1.12); pointer-events: none; }
+    }
+
+    /* ── Particle canvas ───────────────────────────────────── */
+    #splash-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ── Scanlines overlay ─────────────────────────────────── */
+    #splash-screen::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(0,0,0,0.08) 3px,
+        rgba(0,0,0,0.08) 4px
+      );
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* ── Center content ────────────────────────────────────── */
+    #splash-center {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      text-align: center;
+    }
+
+    /* ── Eye logo / ring ───────────────────────────────────── */
+    #splash-eye {
+      width: 80px;
+      height: 80px;
+      position: relative;
+      margin-bottom: 32px;
+    }
+
+    .splash-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 1.5px solid transparent;
+    }
+
+    .splash-ring-1 {
+      border-color: rgba(120,80,255,0.7);
+      animation: ringRotate 3s linear infinite;
+      box-shadow: 0 0 12px rgba(120,80,255,0.4), inset 0 0 12px rgba(120,80,255,0.1);
+    }
+
+    .splash-ring-2 {
+      inset: 12px;
+      border-color: rgba(60,200,255,0.5);
+      animation: ringRotate 2s linear infinite reverse;
+      box-shadow: 0 0 8px rgba(60,200,255,0.3);
+    }
+
+    .splash-ring-3 {
+      inset: 24px;
+      border-color: rgba(255,255,255,0.3);
+      animation: ringRotate 4.5s linear infinite;
+    }
+
+    .splash-ring-dot {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #fff 0%, rgba(120,80,255,0.8) 60%, transparent 100%);
+      box-shadow: 0 0 16px rgba(120,80,255,0.8), 0 0 32px rgba(120,80,255,0.4);
+      animation: dotPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes ringRotate {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    @keyframes dotPulse {
+      0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
+      50%       { opacity: 1;   transform: translate(-50%, -50%) scale(1.3); box-shadow: 0 0 24px rgba(120,80,255,1), 0 0 48px rgba(120,80,255,0.5); }
+    }
+
+    /* ── Logo text ─────────────────────────────────────────── */
+    #splash-logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 3.6rem;
+      font-weight: 700;
+      letter-spacing: 0.25em;
+      color: transparent;
+      background: linear-gradient(135deg, #fff 0%, rgba(120,80,255,0.9) 50%, rgba(60,200,255,0.8) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      opacity: 0;
+      animation: logoReveal 0.8s cubic-bezier(0.2, 0, 0, 1) 0.3s forwards;
+      text-shadow: none;
+      filter: drop-shadow(0 0 24px rgba(120,80,255,0.4));
+    }
+
+    @keyframes logoReveal {
+      from { opacity: 0; letter-spacing: 0.6em; filter: blur(12px) drop-shadow(0 0 24px rgba(120,80,255,0.4)); }
+      to   { opacity: 1; letter-spacing: 0.25em; filter: blur(0) drop-shadow(0 0 24px rgba(120,80,255,0.4)); }
+    }
+
+    #splash-tagline {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.3em;
+      color: rgba(255,255,255,0.35);
+      text-transform: uppercase;
+      margin-top: 8px;
+      margin-bottom: 48px;
+      opacity: 0;
+      animation: fadeUpIn 0.6s ease 0.9s forwards;
+    }
+
+    @keyframes fadeUpIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Loading bar ────────────────────────────────────────── */
+    #splash-loader {
+      width: 320px;
+      opacity: 0;
+      animation: fadeUpIn 0.5s ease 1.1s forwards;
+    }
+
+    #splash-bar-track {
+      width: 100%;
+      height: 2px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #splash-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, rgba(120,80,255,0.9) 0%, rgba(60,200,255,0.9) 100%);
+      border-radius: 999px;
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 8px rgba(120,80,255,0.6);
+    }
+
+    /* shimmer sweep */
+    #splash-bar-fill::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.35) 50%, transparent 100%);
+      animation: shimmer 1.8s ease-in-out infinite;
+      border-radius: 999px;
+    }
+
+    @keyframes shimmer {
+      from { transform: translateX(-100%); }
+      to   { transform: translateX(300%); }
+    }
+
+    #splash-step-text {
+      margin-top: 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      color: rgba(255,255,255,0.4);
+      min-height: 1.4em;
+      transition: opacity 0.2s;
+    }
+
+    #splash-step-text .step-prefix {
+      color: rgba(120,80,255,0.7);
+    }
+
+    #splash-percent {
+      margin-top: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.2);
+    }
+
+    /* ── Floating math ambient field ────────────────────────── */
     .matrix-field {
       position: absolute;
       inset: 0;
       pointer-events: none;
-    }
-
-    .monolith-equation {
-      position: relative;
-      z-index: 2;
-      font-size: 2rem;
-      opacity: 0;
-      animation: centerZoomIn 4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-    }
-
-    .solution-stream {
-      position: relative;
-      z-index: 2;
-      font-size: 1.2rem;
-      margin-top: 2rem;
-      opacity: 0;
-      color: rgba(255,255,255,0.7);
-      animation: centerZoomIn 4s cubic-bezier(0.2, 0.8, 0.2, 1) 0.4s forwards;
+      z-index: 0;
     }
 
     .splash-math {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      color: var(--fg);
+      top: 0;
+      left: 0;
+      color: rgba(255,255,255,0.07) !important;
       white-space: nowrap;
       will-change: transform, opacity;
+      font-size: 0.85rem;
+      pointer-events: none;
     }
 
-    @keyframes centerZoomIn {
-      0% { opacity: 0; transform: scale(0.95); clip-path: inset(0 100% 0 0); }
-      5% { opacity: 1; clip-path: inset(0 100% 0 0); }
-      25% { opacity: 1; clip-path: inset(0 0 0 0); }
-      100% { opacity: 1; transform: scale(1.08); clip-path: inset(0 0 0 0); }
+    /* Force KaTeX inside splash to use very dim colour */
+    #splash-screen .katex,
+    #splash-screen .katex * {
+      color: rgba(255,255,255,0.07) !important;
+      transition: none !important;
     }
 
-    @keyframes floatingDrift {
-      0% { opacity: 0; transform: translate3d(var(--offset-x), var(--offset-y), -1000px) scale(0.05); clip-path: inset(0 100% 0 0); }
-      15% { opacity: 0; clip-path: inset(0 100% 0 0); }
-      30% { opacity: 0.6; clip-path: inset(0 0 0 0); }
-      80% { opacity: 0.6; clip-path: inset(0 0 0 0); }
-      100% { opacity: 0; transform: translate3d(calc(var(--offset-x) * 4), calc(var(--offset-y) * 4), 300px) scale(8); clip-path: inset(0 0 0 0); }
+    /* ── Done checkmark flash ───────────────────────────────── */
+    #splash-done {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
     }
+
+    #splash-done.visible {
+      animation: doneFlash 0.6s ease forwards;
+    }
+
+    @keyframes doneFlash {
+      0%   { opacity: 0; }
+      20%  { opacity: 1; }
+      80%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    .done-ring {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: 2px solid rgba(60,255,140,0.8);
+      box-shadow: 0 0 30px rgba(60,255,140,0.5), inset 0 0 20px rgba(60,255,140,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      color: rgba(60,255,140,0.9);
+    }
+
+    /* ── Floating drift animation for ambient field ─────────── */
+    @keyframes ambientFade {
+      0%   { opacity: 0;   transform: translateY(0); }
+      20%  { opacity: 1; }
+      80%  { opacity: 1; }
+      100% { opacity: 0;   transform: translateY(var(--drift, -20px)); }
+    }
+
 
     #blocks-container {
       display: flex;
@@ -1036,9 +1254,28 @@
 
 <!-- ── Splash Screen (Cinematic Intro) ────────────────────────────────── -->
 <div id="splash-screen">
+  <canvas id="splash-canvas"></canvas>
   <div class="matrix-field" id="matrix-field"></div>
-  <div class="monolith-equation" id="monolith-equation"></div>
-  <div class="solution-stream" id="solution-stream"></div>
+  <div id="splash-center">
+    <div id="splash-eye">
+      <div class="splash-ring splash-ring-1"></div>
+      <div class="splash-ring splash-ring-2"></div>
+      <div class="splash-ring splash-ring-3"></div>
+      <div class="splash-ring-dot"></div>
+    </div>
+    <div id="splash-logo">PARSE</div>
+    <div id="splash-tagline">Live LaTeX Calculation Engine</div>
+    <div id="splash-loader">
+      <div id="splash-bar-track">
+        <div id="splash-bar-fill"></div>
+      </div>
+      <div id="splash-step-text"><span class="step-prefix">&gt;</span> Initialising...</div>
+      <div id="splash-percent">0%</div>
+    </div>
+  </div>
+  <div id="splash-done">
+    <div class="done-ring">✓</div>
+  </div>
 </div>
 
 <!-- ── Static chrome ──────────────────────────────────────────────────── -->
@@ -2186,6 +2423,19 @@ function _createWorker(i) {
         setWorkerStatus('loading');
         workerLabel.textContent = data.step;
         terminalLog(`[Worker 0] Progress: ${data.step}`, 'info');
+        // Map known step strings to our predefined progress levels
+        const STEP_MAP = {
+          'Loading Pyodide engine...':   { label: 'Pyodide engine', pct: 12 },
+          'Loading SymPy & SciPy...':    { label: 'SymPy & SciPy packages', pct: 45 },
+          'Fetching ANTLR4...':          { label: 'ANTLR4 parser', pct: 65 },
+          'Checking SymEngine...':       { label: 'SymEngine backend', pct: 72 },
+          'SymEngine loaded ✓':          { label: 'SymEngine loaded ✓', pct: 80 },
+          'Loading python backend...':   { label: 'Python backend', pct: 92 },
+        };
+        const match = STEP_MAP[data.step];
+        if (match && window._setSplashProgress) {
+          window._setSplashProgress(match.label, match.pct);
+        }
       }
       return;
     }
@@ -2200,9 +2450,18 @@ function _createWorker(i) {
         const splash = document.getElementById('splash-screen');
         const app = document.getElementById('app');
         if (splash && app) {
-          splash.classList.add('loaded');
-          app.classList.add('ready');
-          setTimeout(() => { splash.remove(); }, 1800);
+          // Flash 100% complete
+          if (window._setSplashProgress) window._setSplashProgress('System online — entering Parse', 100);
+          // Green checkmark flash
+          const doneEl = document.getElementById('splash-done');
+          if (doneEl) doneEl.classList.add('visible');
+          // Stop particle canvas
+          if (window._stopSplashCanvas) window._stopSplashCanvas();
+          setTimeout(() => {
+            splash.classList.add('loaded');
+            app.classList.add('ready');
+            setTimeout(() => { splash.remove(); }, 1000);
+          }, 700);
         }
 
         // Initial boot eval:
@@ -3435,58 +3694,138 @@ document.getElementById('app').addEventListener('scroll', () => {
     });
   }
 
-  // Cinematic Intro Initialization
-  const splashScreen = document.getElementById('splash-screen');
+  // ── Particle Canvas ─────────────────────────────────────────────────────────
+  const canvas = document.getElementById('splash-canvas');
+  if (canvas) {
+    const ctx = canvas.getContext('2d');
+    let W = canvas.width = window.innerWidth;
+    let H = canvas.height = window.innerHeight;
+    
+    const PARTICLE_COUNT = 120;
+    const particles = Array.from({ length: PARTICLE_COUNT }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.25,
+      vy: (Math.random() - 0.5) * 0.25,
+      r: Math.random() * 1.2 + 0.3,
+      alpha: Math.random() * 0.4 + 0.1,
+      hue: Math.random() > 0.6 ? 250 : 200  // purple or cyan
+    }));
+
+    let animFrame;
+    function drawParticles() {
+      ctx.clearRect(0, 0, W, H);
+      // Draw connections first
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 90) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `hsla(${particles[i].hue}, 70%, 65%, ${(1 - dist / 90) * 0.08})`;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+      }
+      // Draw particles
+      for (const p of particles) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${p.hue}, 80%, 75%, ${p.alpha})`;
+        ctx.fill();
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+        if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+      }
+      animFrame = requestAnimationFrame(drawParticles);
+    }
+    drawParticles();
+
+    window.addEventListener('resize', () => {
+      W = canvas.width = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }, { passive: true });
+
+    // Stop canvas animation when splash is removed to free GPU
+    const origRemove = splash => {
+      cancelAnimationFrame(animFrame);
+    };
+    window._stopSplashCanvas = origRemove;
+  }
+
+  // ── Ambient Floating Math Field ──────────────────────────────────────────────
   const matrixField = document.getElementById('matrix-field');
-  const monolithEquation = document.getElementById('monolith-equation');
-  const solutionStream = document.getElementById('solution-stream');
-
-  if (splashScreen && matrixField && monolithEquation && solutionStream) {
-    // Act 1: The Monolith Equation
-    try {
-      katex.render("\\mathcal{L}\\{f(t)\\} = \\int_{0}^{\\infty} f(t) e^{-st} dt", monolithEquation, { displayMode: true });
-      // Act 2: The Solution Stream
-      katex.render("\\begin{aligned} &= \\lim_{R \\to \\infty} \\int_{0}^{R} f(t) e^{-st} dt \\\\ &= F(s) \\end{aligned}", solutionStream, { displayMode: true });
-    } catch(e) { console.warn('Failed to render splash math:', e); }
-
-    // Act 3: The Infinite Matrix Field
+  if (matrixField) {
     const fragments = [
       "\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}",
-      "\\det(A - \\lambda I) = 0",
-      "\\oint_{\\partial \\Sigma} \\mathbf{E} \\cdot d\\mathbf{l}",
       "e^{i\\pi} + 1 = 0",
       "\\mathcal{F}\\{f(t)\\}",
-      "\\frac{\\partial^2 u}{\\partial x^2}",
-      "\\sum_{n=1}^{\\infty} \\frac{1}{n^2} = \\frac{\\pi^2}{6}",
-      "\\lim_{x \\to 0} \\frac{\\sin x}{x} = 1",
-      "\\nabla \\times \\mathbf{B} = \\mu_0 \\mathbf{J}",
-      "\\alpha", "\\beta", "\\gamma", "\\Delta", "\\Sigma", "\\Omega",
+      "\\sum_{n=1}^{\\infty} \\frac{1}{n^2}",
+      "\\lim_{x \\to 0} \\frac{\\sin x}{x}",
+      "\\nabla^2 \\psi",
       "x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}",
-      "\\iiint_V \\nabla \\cdot \\mathbf{F} \\, dV",
-      "P(A|B) = \\frac{P(B|A)P(A)}{P(B)}"
+      "P(A|B) = \\frac{P(B|A)P(A)}{P(B)}",
+      "\\det(A - \\lambda I) = 0",
+      "\\oint \\mathbf{E} \\cdot d\\mathbf{l}",
+      "\\Gamma(n) = (n-1)!",
+      "\\zeta(2) = \\frac{\\pi^2}{6}",
+      "\\alpha", "\\beta", "\\gamma", "\\Omega"
     ];
-
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < 40; i++) {
       const span = document.createElement('span');
       span.className = 'splash-math';
-      
-      const offsetX = (Math.random() * 1000 - 500).toFixed(2) + 'px';
-      const offsetY = (Math.random() * 1000 - 500).toFixed(2) + 'px';
-      span.style.setProperty('--offset-x', offsetX);
-      span.style.setProperty('--offset-y', offsetY);
-      
-      const delay = (Math.random() * 4).toFixed(2);
-      const duration = (4 + Math.random() * 3).toFixed(2); // 4s to 7s
-      span.style.animation = `floatingDrift ${duration}s infinite linear ${delay}s`;
-      span.style.opacity = "0";
-      
+      // Random position spread across entire screen
+      const px = (Math.random() * window.innerWidth * 0.92).toFixed(0) + 'px';
+      const py = (Math.random() * window.innerHeight * 0.92).toFixed(0) + 'px';
+      span.style.left = px;
+      span.style.top  = py;
+      const delay = (Math.random() * 5).toFixed(2);
+      const duration = (8 + Math.random() * 6).toFixed(2);
+      // Simple fade in/out with slight upward drift
+      const drift = (Math.random() * 30 - 15).toFixed(0);
+      span.style.animation = `none`;
+      span.style.opacity = (Math.random() * 0.06 + 0.02).toFixed(2);
+      // Stagger-fade using a keyframe via style
+      span.style.animationName = 'ambientFade';
+      span.style.animationDuration = duration + 's';
+      span.style.animationDelay = delay + 's';
+      span.style.animationIterationCount = 'infinite';
+      span.style.animationTimingFunction = 'ease-in-out';
+      span.style.setProperty('--drift', drift + 'px');
+      span.style.animation = `ambientFade ${duration}s ease-in-out ${delay}s infinite`;
       const tex = fragments[Math.floor(Math.random() * fragments.length)];
-      try {
-        katex.render(tex, span, { displayMode: true, throwOnError: false, strict: false, trust: true });
-      } catch(e) {}
+      try { katex.render(tex, span, { throwOnError: false, strict: false }); } catch(e) {}
       matrixField.appendChild(span);
     }
   }
+
+  // ── Loading Bar Orchestration ────────────────────────────────────────────────
+  const STEPS = [
+    { label: 'Pyodide engine', pct: 12 },
+    { label: 'SymPy & SciPy packages', pct: 45 },
+    { label: 'ANTLR4 parser', pct: 65 },
+    { label: 'SymEngine backend', pct: 80 },
+    { label: 'Python backend', pct: 92 },
+    { label: 'System ready', pct: 100 }
+  ];
+
+  const splashBar   = document.getElementById('splash-bar-fill');
+  const splashText  = document.getElementById('splash-step-text');
+  const splashPct   = document.getElementById('splash-percent');
+
+  function _setSplashProgress(label, pct) {
+    if (splashBar) splashBar.style.width = pct + '%';
+    if (splashText) splashText.innerHTML = `<span class="step-prefix">&gt;</span> ${label}`;
+    if (splashPct) splashPct.textContent = pct + '%';
+  }
+
+  _setSplashProgress('Booting compute engine...', 5);
+  window._setSplashProgress = _setSplashProgress;
+  window._SPLASH_STEPS = STEPS;
 
   const savedTheme = _lsLoad(LS.THEME, 'dark');
   _applyTheme(savedTheme);
