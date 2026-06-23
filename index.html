@@ -1120,6 +1120,16 @@
     #cmd-overlay.open #cmd-palette {
       transform: translateY(0) scale(1);
     }
+    
+    #cmd-overlay.overlay-preview-mode {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      background: transparent !important;
+    }
+    
+    #cmd-overlay.open #cmd-palette.palette-preview-mode {
+      transform: translateX(calc(50vw - 50% - 20px)) scale(1) !important;
+    }
 
     #cmd-input {
       width: 100%;
@@ -1166,6 +1176,29 @@
       font-family: var(--sans);
       font-size: 0.8rem;
       opacity: 0.5;
+      display: flex;
+      align-items: center;
+    }
+    .toggle-track {
+      width: 36px; height: 20px; background: rgba(255,255,255,0.1); 
+      border-radius: 10px; position: relative; cursor: pointer; 
+      transition: background 0.2s var(--ease);
+    }
+    .toggle-track.active {
+      background: var(--caret-col);
+    }
+    .toggle-dot {
+      width: 14px; height: 14px; background: #fff; border-radius: 50%; 
+      position: absolute; top: 3px; left: 3px; 
+      transition: transform 0.2s var(--ease);
+    }
+    .toggle-track.active .toggle-dot {
+      transform: translateX(16px);
+    }
+    .theme-active-badge {
+      color: var(--caret-col); font-weight: bold; background: var(--caret-glow); 
+      padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; 
+      text-shadow: 0 0 8px var(--caret-col);
     }
     @keyframes breatheGradient {
       0% { opacity: 0.6; }
@@ -1491,10 +1524,19 @@ let _cmdItems = [];
 let _cmdSavedFocus = null;
 let _cmdCurrentMenu = 'root';
 
+let _cmdOriginalTheme = null;
+
+function _previewTheme(themeName) {
+  document.documentElement.setAttribute('data-theme', themeName);
+}
+
 function _openPalette() {
   _cmdSavedFocus = document.activeElement;
   _cmdOpen = true;
   _cmdCurrentMenu = 'root';
+  _cmdOriginalTheme = null;
+  cmdOverlay.classList.remove('overlay-preview-mode');
+  document.getElementById('cmd-palette').classList.remove('palette-preview-mode');
   cmdOverlay.classList.add('open');
   cmdOverlay.setAttribute('aria-hidden', 'false');
   cmdInput.value = '';
@@ -1505,8 +1547,16 @@ function _openPalette() {
 function _closePalette() {
   _cmdOpen = false;
   cmdOverlay.classList.remove('open');
+  cmdOverlay.classList.remove('overlay-preview-mode');
+  document.getElementById('cmd-palette').classList.remove('palette-preview-mode');
   cmdOverlay.setAttribute('aria-hidden', 'true');
   cmdInput.blur();
+  
+  if (_cmdOriginalTheme) {
+    _previewTheme(_cmdOriginalTheme);
+    _cmdOriginalTheme = null;
+  }
+  
   if (_cmdSavedFocus) {
     _cmdSavedFocus.focus();
     _cmdSavedFocus = null;
@@ -1918,18 +1968,21 @@ function _renderCmdResults() {
       { type: 'cmd', label: 'Theme: Tokyo Night', keywords: 'tokyo night neon blue purple' }
     ];
     themes.forEach(cmd => {
+      const parsedTheme = cmd.label.replace('Theme: ', '').toLowerCase().replace(/\s+/g, '-');
+      cmd.isActiveTheme = (parsedTheme === currentTheme);
+      cmd.themeName = parsedTheme;
       if (!query || cmd.label.toLowerCase().includes(query) || cmd.keywords.includes(query)) _cmdItems.push(cmd);
     });
   } else if (_cmdCurrentMenu === 'settings') {
     cmdInput.placeholder = "Search settings...";
     _cmdItems.push({ type: 'back', label: '< Back to Main Menu', keywords: '' });
     const settingsCmds = [
-      { type: 'cmd', label: `Settings: Show Approximations (${settings.showApprox ? 'ON' : 'OFF'})`, keywords: 'approx decimal setting' },
-      { type: 'cmd', label: `Settings: Assume Real Variables (${settings.assumeReal ? 'ON' : 'OFF'})`, keywords: 'assume real variables setting' },
-      { type: 'cmd', label: `Settings: Toggle Angles (${settings.useDegrees ? 'Degrees' : 'Radians'})`, keywords: 'angle degree radian setting' },
+      { type: 'cmd', label: `Settings: Show Approximations`, toggleState: settings.showApprox, keywords: 'approx decimal setting' },
+      { type: 'cmd', label: `Settings: Assume Real Variables`, toggleState: settings.assumeReal, keywords: 'assume real variables setting' },
+      { type: 'cmd', label: `Settings: Toggle Angles (${settings.useDegrees ? 'Degrees' : 'Radians'})`, toggleState: settings.useDegrees, keywords: 'angle degree radian setting' },
       { type: 'cmd', label: `Settings: Set Precision: 10`, keywords: 'precision decimals' },
-      { type: 'cmd', label: `Settings: Echo Typed LaTeX (${settings.echoLatex ? 'ON' : 'OFF'})`, keywords: 'echo render type typed latex setting' },
-      { type: 'cmd', label: `Settings: Deep Simplify (${settings.deepSimplify ? 'ON' : 'OFF'})`, keywords: 'deep simplify heavy algebra sympy slow setting' }
+      { type: 'cmd', label: `Settings: Echo Typed LaTeX`, toggleState: settings.echoLatex, keywords: 'echo render type typed latex setting' },
+      { type: 'cmd', label: `Settings: Deep Simplify`, toggleState: settings.deepSimplify, keywords: 'deep simplify heavy algebra sympy slow setting' }
     ];
     settingsCmds.forEach(cmd => {
       if (!query || cmd.label.toLowerCase().includes(query) || cmd.keywords.includes(query)) _cmdItems.push(cmd);
@@ -1952,7 +2005,22 @@ function _renderCmdResults() {
 
     const descSpan = document.createElement('span');
     descSpan.className = 'cmd-item-desc';
-    descSpan.textContent = item.type === 'menu' ? 'Menu' : item.type === 'back' ? 'Back' : item.type === 'cmd' ? 'Command' : 'Equation';
+    
+    if (item.isActiveTheme) {
+      const badge = document.createElement('span');
+      badge.className = 'theme-active-badge';
+      badge.textContent = '✓ Active';
+      descSpan.appendChild(badge);
+    } else if (item.toggleState !== undefined) {
+      const track = document.createElement('div');
+      track.className = 'toggle-track' + (item.toggleState ? ' active' : '');
+      const dot = document.createElement('div');
+      dot.className = 'toggle-dot';
+      track.appendChild(dot);
+      descSpan.appendChild(track);
+    } else {
+      descSpan.textContent = item.type === 'menu' ? 'Menu' : item.type === 'back' ? 'Back' : item.type === 'cmd' ? 'Command' : 'Equation';
+    }
     li.appendChild(descSpan);
 
     li.addEventListener('mousedown', (e) => {
@@ -1963,6 +2031,9 @@ function _renderCmdResults() {
     li.addEventListener('mouseenter', () => {
       _cmdSelectedIndex = index;
       _drawCmdSelection();
+      if (_cmdCurrentMenu === 'themes' && item.themeName) {
+        _previewTheme(item.themeName);
+      }
     });
 
     cmdResults.appendChild(li);
@@ -1976,7 +2047,10 @@ function _drawCmdSelection() {
   items.forEach((el, idx) => {
     if (idx === _cmdSelectedIndex) {
       el.classList.add('selected');
-      el.scrollIntoView({ block: 'nearest' });
+      el.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+      if (_cmdCurrentMenu === 'themes' && _cmdItems[idx] && _cmdItems[idx].themeName) {
+        _previewTheme(_cmdItems[idx].themeName);
+      }
     } else {
       el.classList.remove('selected');
     }
@@ -1986,20 +2060,34 @@ function _drawCmdSelection() {
 function _executeCmd(item) {
   if (item.type === 'menu') {
     _cmdCurrentMenu = item.id;
+    if (item.id === 'themes') {
+      _cmdOriginalTheme = currentTheme;
+      cmdOverlay.classList.add('overlay-preview-mode');
+      document.getElementById('cmd-palette').classList.add('palette-preview-mode');
+    }
     cmdInput.value = '';
     _renderCmdResults();
     return;
   } else if (item.type === 'back') {
+    if (_cmdCurrentMenu === 'themes') {
+      cmdOverlay.classList.remove('overlay-preview-mode');
+      document.getElementById('cmd-palette').classList.remove('palette-preview-mode');
+      if (_cmdOriginalTheme) {
+        _previewTheme(_cmdOriginalTheme);
+        _cmdOriginalTheme = null;
+      }
+    }
     _cmdCurrentMenu = 'root';
     cmdInput.value = '';
     _renderCmdResults();
     return;
   }
   
-  _closePalette();
   if (item.type === 'cmd') {
     if (item.label.includes('Theme:')) {
       const theme = item.label.split('Theme: ')[1].toLowerCase().replace(/\s+/g, '-');
+      _cmdOriginalTheme = theme; // Prevent closePalette from reverting it
+      _closePalette();
       _applyTheme(theme);
     } else if (item.label.includes('Approx')) {
       settings.showApprox = !settings.showApprox;
@@ -2044,6 +2132,7 @@ function _executeCmd(item) {
         blocks.forEach(b => { if (b.latex.trim()) sendToWorker(b.id, b.latex); });
       }
     } else if (item.label.includes('Clear Notebook')) {
+      _closePalette();
       blocks.slice().forEach(b => {
         const el = document.getElementById(`block-${b.id}`);
         if (el) el.remove();
@@ -2052,7 +2141,13 @@ function _executeCmd(item) {
       _saveNotebook();
       _createBlock('', null, true);
     }
+    
+    // If it was a setting toggle, re-render the palette gracefully to show animation
+    if (item.toggleState !== undefined) {
+      _renderCmdResults();
+    }
   } else if (item.type === 'block') {
+    _closePalette();
     const ta = document.getElementById(`in-${item.id}`);
     if (ta) {
       ta.focus();
@@ -2443,7 +2538,34 @@ function _handleWorkerResponse(block, data) {
           plotContainer.__observer.disconnect();
         }
 
-        functionPlot({
+        let yDomain = undefined;
+        try {
+          // Attempt to evaluate function to find Y bounds
+          const jsFn = data.plot.fn.replace(/\^/g, '**')
+            .replace(/\b(sin|cos|tan|exp|log|log10|sqrt|abs)\b/g, 'Math.$1')
+            .replace(/\bpi\b/gi, 'Math.PI')
+            .replace(/\be\b/gi, 'Math.E');
+          const evalFn = new Function('x', `return ${jsFn};`);
+          let yMin = Infinity, yMax = -Infinity;
+          for (let i = 0; i <= 100; i++) {
+            const x = xDomain[0] + (xDomain[1] - xDomain[0]) * (i / 100);
+            const y = evalFn(x);
+            if (isFinite(y)) {
+              if (y < yMin) yMin = y;
+              if (y > yMax) yMax = y;
+            }
+          }
+          if (yMin < yMax && isFinite(yMin) && isFinite(yMax)) {
+            const pad = (yMax - yMin) * 0.15;
+            yDomain = [yMin - pad, yMax + pad];
+          } else if (isFinite(yMin) && yMin === yMax) {
+            yDomain = [yMin - 5, yMax + 5];
+          }
+        } catch(e) {
+          console.warn('Could not auto-scale Y axis', e);
+        }
+
+        const plotOpts = {
           target: `#plot-container-${block.id}`,
           width: 500,
           height: 250,
@@ -2455,7 +2577,12 @@ function _handleWorkerResponse(block, data) {
             range: data.plot.bounds || undefined,
             closed: data.plot.bounds ? true : false
           }]
-        });
+        };
+        if (yDomain) {
+          plotOpts.yAxis = { domain: yDomain };
+        }
+
+        functionPlot(plotOpts);
 
         // Move axes to cross at the origin and keep them there during zoom
         const svg = plotContainer.querySelector('svg');
