@@ -451,6 +451,32 @@
       max-width: 100%;
       overflow-x: auto;
       overflow-y: visible;
+      position: relative;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: transparent;
+      border: none;
+      color: var(--fg-dim);
+      cursor: pointer;
+      padding: 0.5rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.2s var(--ease);
+      border-radius: 6px;
+    }
+
+    .copy-btn:hover {
+      color: var(--fg);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    body.hover-export .pane-output:hover .copy-btn {
+      opacity: 1;
+      pointer-events: auto;
     }
 
     /* Custom Scrollbar for Sleek UI */
@@ -1221,7 +1247,65 @@
       -webkit-background-clip: text;
       color: transparent;
       animation: breatheGradient 2s ease-in-out infinite;
+    }    /* ════════════════════════════════════════════════════════════════
+       TERMINAL
+    ════════════════════════════════════════════════════════════════ */
+    #parse-terminal {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 250px;
+      background: #0a0a0a;
+      border-top: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      color: #888;
+      z-index: 2000;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
     }
+
+    #parse-terminal.open {
+      transform: translateY(0);
+    }
+
+    .terminal-header {
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: #aaa;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .terminal-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.5rem 1rem;
+    }
+
+    .terminal-log {
+      margin: 0.2rem 0;
+      word-break: break-all;
+    }
+
+    .terminal-log .timestamp {
+      color: #666;
+      margin-right: 0.5rem;
+    }
+
+    .terminal-log.error { color: #ff5555; }
+    .terminal-log.warn { color: #ffb86c; }
+    .terminal-log.info { color: #8be9fd; }
+    .terminal-log.success { color: #50fa7b; }
+
   </style>
 </head>
 <body>
@@ -1362,6 +1446,15 @@
   </div>
 </div>
 
+<!-- ── Hacker-Mode Terminal Console ────────────────────────────────────── -->
+<div id="parse-terminal">
+  <div class="terminal-header">
+    <span>System Telemetry</span>
+    <span style="opacity: 0.5; text-transform: none; font-size: 0.7rem;">Toggle with `</span>
+  </div>
+  <div id="parse-terminal-content" class="terminal-content"></div>
+</div>
+
 
 <!-- ════════════════════════════════════════════════════════════════════
      NOTEBOOK LAYOUT
@@ -1454,6 +1547,11 @@ const LS = {
   PRECISION:      'latexcalc_precision',
   ECHO_LATEX:     'latexcalc_echoLatex',
   DEEP_SIMPLIFY:  'latexcalc_deepSimplify',
+  AUTO_CLOSE:     'latexcalc_autoClose',
+  TAB_SNIPPETS:   'latexcalc_tabSnippets',
+  PERSISTENT_JULIA: 'latexcalc_persistentJulia',
+  HOVER_EXPORT:   'latexcalc_hoverExport',
+  SHOW_TERMINAL:  'latexcalc_showTerminal',
 };
 
 
@@ -1462,12 +1560,17 @@ const LS = {
 ════════════════════════════════════════════════════════════════════════ */
 
 const settings = {
-  showApprox:    false,
-  assumeReal:    false,
-  useDegrees:    false,
-  precision:     10,
-  echoLatex:     false,
-  deepSimplify:  false,
+  showApprox:      false,
+  assumeReal:      false,
+  useDegrees:      false,
+  precision:       10,
+  echoLatex:       false,
+  deepSimplify:    false,
+  autoClose:       false,
+  tabSnippets:     false,
+  persistentJulia: false,
+  hoverExport:     false,
+  showTerminal:    false,
 };
 
 /**
@@ -1564,6 +1667,13 @@ function _closePalette() {
 }
 
 document.addEventListener('keydown', (e) => {
+  if (e.key === '\`' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'INPUT') {
+    e.preventDefault();
+    settings.showTerminal = !settings.showTerminal;
+    _lsSave(LS.SHOW_TERMINAL, settings.showTerminal);
+    const term = document.getElementById('parse-terminal');
+    if (term) term.classList.toggle('open', settings.showTerminal);
+  }
   if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
     e.preventDefault();
     _cmdOpen ? _closePalette() : _openPalette();
@@ -1982,7 +2092,12 @@ function _renderCmdResults() {
       { type: 'cmd', label: `Settings: Toggle Angles (${settings.useDegrees ? 'Degrees' : 'Radians'})`, toggleState: settings.useDegrees, keywords: 'angle degree radian setting' },
       { type: 'cmd', label: `Settings: Set Precision: 10`, keywords: 'precision decimals' },
       { type: 'cmd', label: `Settings: Echo Typed LaTeX`, toggleState: settings.echoLatex, keywords: 'echo render type typed latex setting' },
-      { type: 'cmd', label: `Settings: Deep Simplify`, toggleState: settings.deepSimplify, keywords: 'deep simplify heavy algebra sympy slow setting' }
+      { type: 'cmd', label: `Settings: Deep Simplify`, toggleState: settings.deepSimplify, keywords: 'deep simplify heavy algebra sympy slow setting' },
+      { type: 'cmd', label: `Settings: Auto-Close Delimiters`, toggleState: settings.autoClose, keywords: 'auto close bracket parentheses setting' },
+      { type: 'cmd', label: `Settings: Tab Snippets`, toggleState: settings.tabSnippets, keywords: 'tab snippet completion latex setting' },
+      { type: 'cmd', label: `Settings: Persistent Julia State`, toggleState: settings.persistentJulia, keywords: 'persistent julia state memory variables setting' },
+      { type: 'cmd', label: `Settings: Hover LaTeX Export`, toggleState: settings.hoverExport, keywords: 'hover export latex copy button clipboard setting' },
+      { type: 'cmd', label: `Settings: Show Terminal Console`, toggleState: settings.showTerminal, keywords: 'terminal console telemetry debug log setting' }
     ];
     settingsCmds.forEach(cmd => {
       if (!query || cmd.label.toLowerCase().includes(query) || cmd.keywords.includes(query)) _cmdItems.push(cmd);
@@ -2125,6 +2240,29 @@ function _executeCmd(item) {
       if (readyCount === WORKER_COUNT) {
         blocks.forEach(b => { if (b.latex.trim()) sendToWorker(b.id, b.latex); });
       }
+    } else if (item.label.includes('Auto-Close Delimiters')) {
+      settings.autoClose = !settings.autoClose;
+      _lsSave(LS.AUTO_CLOSE, settings.autoClose);
+      _renderCmdResults();
+    } else if (item.label.includes('Tab Snippets')) {
+      settings.tabSnippets = !settings.tabSnippets;
+      _lsSave(LS.TAB_SNIPPETS, settings.tabSnippets);
+      _renderCmdResults();
+    } else if (item.label.includes('Persistent Julia State')) {
+      settings.persistentJulia = !settings.persistentJulia;
+      _lsSave(LS.PERSISTENT_JULIA, settings.persistentJulia);
+      _renderCmdResults();
+    } else if (item.label.includes('Hover LaTeX Export')) {
+      settings.hoverExport = !settings.hoverExport;
+      _lsSave(LS.HOVER_EXPORT, settings.hoverExport);
+      document.body.classList.toggle('hover-export', settings.hoverExport);
+      _renderCmdResults();
+    } else if (item.label.includes('Show Terminal Console')) {
+      settings.showTerminal = !settings.showTerminal;
+      _lsSave(LS.SHOW_TERMINAL, settings.showTerminal);
+      const term = document.getElementById('parse-terminal');
+      if (term) term.classList.toggle('open', settings.showTerminal);
+      _renderCmdResults();
     } else if (item.label.includes('Set Precision: 10')) {
       settings.precision = 10;
       _lsSave(LS.PRECISION, settings.precision);
@@ -2199,12 +2337,14 @@ function _createWorker(i) {
       if (i === 0) { // Only show progress for the first worker
         setWorkerStatus('loading');
         workerLabel.textContent = data.step;
+        terminalLog(`[Worker 0] Progress: ${data.step}`, 'info');
       }
       return;
     }
 
     if (data.status === 'ready') {
       readyCount++;
+      terminalLog(`[Worker ${i}] Ready (${readyCount}/${WORKER_COUNT})`, 'success');
       if (readyCount === WORKER_COUNT) {
         setWorkerStatus('ready');
         
@@ -2225,6 +2365,7 @@ function _createWorker(i) {
 
     if (data.status === 'init_error') {
       setWorkerStatus('error');
+      terminalLog(`[Worker ${i}] Init Error`, 'error');
       // Failsafe: Remove splash screen on hard error so the user isn't stuck
       const splash = document.getElementById('splash-screen');
       const app = document.getElementById('app');
@@ -2240,6 +2381,11 @@ function _createWorker(i) {
 
     const block = blocks.find(b => b.id === data.blockId);
     if (block) {
+      if (data.status === 'success') {
+        terminalLog(`[Worker ${i}] Success for block ${data.blockId}`, 'success');
+      } else if (data.status === 'error') {
+        terminalLog(`[Worker ${i}] Error: ${data.error}`, 'error');
+      }
       // Clear watchdog (soft) timer
       if (block.watchdogTimer) {
         clearTimeout(block.watchdogTimer);
@@ -2334,6 +2480,7 @@ function _dispatchToWorker(workerIndex, blockId, latex, seqId) {
     if (katexOut) {
       katexOut.innerHTML = '<span class="computing-hint">Computing…</span>';
     }
+    terminalLog(`[Worker ${workerIndex}] Dispatched eval: ${latex.substring(0,20)}...`, 'info');
     const scaleOut = document.getElementById(`scale-out-${blockId}`);
     if (scaleOut) scaleOut.style.transform = '';
     _hideApprox(blockId);
@@ -2462,11 +2609,21 @@ function _tryNumericFastPath(blockId, latex) {
     if (block) block.approx = null;
 
     setWorkerStatus('ready', 'JS Native');
-
     return true;
   } catch (_) {
     return false;
   }
+}
+
+function terminalLog(msg, type = 'info') {
+  const content = document.getElementById('parse-terminal-content');
+  if (!content) return;
+  const line = document.createElement('div');
+  line.className = `terminal-log ${type}`;
+  const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+  line.innerHTML = `<span class="timestamp">[${time}]</span> ${msg}`;
+  content.appendChild(line);
+  content.scrollTop = content.scrollHeight;
 }
 
 function sendToWorker(blockId, latex) {
@@ -3007,11 +3164,27 @@ function _createBlock(initialLatex = '', approx = null, focusAfter = false) {
           <span class="output-hint">result appears here</span>
         </div>
       </div>
+      <button class="copy-btn" id="copy-btn-${blockId}" title="Copy LaTeX" aria-label="Copy LaTeX">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+      </button>
       <div id="approx-${blockId}" class="approx-output" aria-live="polite"></div>
       <div class="plot-container" id="plot-container-${blockId}"></div>
     </section>
   `;
   container.appendChild(el);
+
+  const copyBtn = document.getElementById(`copy-btn-${blockId}`);
+  if (copyBtn) {
+    copyBtn.addEventListener('click', () => {
+      const block = blocks.find(b => b.id === blockId);
+      if (block && block.latexOut) {
+        navigator.clipboard.writeText(block.latexOut).then(() => {
+          copyBtn.style.color = 'var(--accent)';
+          setTimeout(() => { copyBtn.style.color = ''; }, 1000);
+        });
+      }
+    });
+  }
 
   const ta = document.getElementById(`in-${blockId}`);
   ta.value = initialLatex;
@@ -3105,6 +3278,66 @@ function _bindBlockEvents(blockId, ta) {
 
   ['keyup', 'keydown', 'click', 'select'].forEach(evt =>
     ta.addEventListener(evt, (e) => {
+      if (evt === 'keydown' && e.key === 'Tab' && settings.tabSnippets) {
+        const val = ta.value;
+        const start = ta.selectionStart;
+        if (start >= 4 && val.substring(start - 4, start) === '\\int') {
+          e.preventDefault();
+          const newVal = val.substring(0, start) + '_{}^{} ' + val.substring(ta.selectionEnd);
+          ta.value = newVal;
+          ta.selectionStart = ta.selectionEnd = start + 2;
+          ta.dispatchEvent(new Event('input'));
+          return;
+        }
+      }
+
+      if (evt === 'keydown' && settings.autoClose) {
+        const pairs = { '(': ')', '[': ']', '{': '}' };
+        const reversePairs = { ')': true, ']': true, '}': true };
+        
+        if (pairs[e.key]) {
+          const val = ta.value;
+          const start = ta.selectionStart;
+          const end = ta.selectionEnd;
+          e.preventDefault();
+          if (start !== end) {
+            const newVal = val.substring(0, start) + e.key + val.substring(start, end) + pairs[e.key] + val.substring(end);
+            ta.value = newVal;
+            ta.selectionStart = start + 1;
+            ta.selectionEnd = end + 1;
+          } else {
+            const newVal = val.substring(0, start) + e.key + pairs[e.key] + val.substring(start);
+            ta.value = newVal;
+            ta.selectionStart = ta.selectionEnd = start + 1;
+          }
+          ta.dispatchEvent(new Event('input'));
+          return;
+        }
+
+        if (reversePairs[e.key]) {
+          if (ta.selectionStart === ta.selectionEnd && ta.value[ta.selectionStart] === e.key) {
+            e.preventDefault();
+            ta.selectionStart = ta.selectionEnd = ta.selectionStart + 1;
+            _updateCaret();
+            return;
+          }
+        }
+
+        if (e.key === 'Backspace' && ta.selectionStart === ta.selectionEnd && ta.selectionStart > 0) {
+          const charBefore = ta.value[ta.selectionStart - 1];
+          const charAfter = ta.value[ta.selectionStart];
+          if (pairs[charBefore] && pairs[charBefore] === charAfter) {
+            e.preventDefault();
+            const val = ta.value;
+            const start = ta.selectionStart;
+            ta.value = val.substring(0, start - 1) + val.substring(start + 1);
+            ta.selectionStart = ta.selectionEnd = start - 1;
+            ta.dispatchEvent(new Event('input'));
+            return;
+          }
+        }
+      }
+
       // Shift+Enter mechanic
       if (evt === 'keydown' && e.key === 'Enter' && e.shiftKey) {
         e.preventDefault();
@@ -3362,12 +3595,17 @@ document.getElementById('app').addEventListener('scroll', () => {
   const savedTheme = _lsLoad(LS.THEME, 'dark');
   _applyTheme(savedTheme);
 
-  settings.showApprox   = _lsLoad(LS.SHOW_APPROX,   false);
-  settings.assumeReal   = _lsLoad(LS.ASSUME_REAL,   false);
-  settings.useDegrees   = _lsLoad(LS.USE_DEGREES,   false);
-  settings.precision    = _lsLoad(LS.PRECISION,     10);
-  settings.echoLatex    = _lsLoad(LS.ECHO_LATEX,    false);
-  settings.deepSimplify = _lsLoad(LS.DEEP_SIMPLIFY, false);
+  settings.showApprox      = _lsLoad(LS.SHOW_APPROX,   false);
+  settings.assumeReal      = _lsLoad(LS.ASSUME_REAL,   false);
+  settings.useDegrees      = _lsLoad(LS.USE_DEGREES,   false);
+  settings.precision       = _lsLoad(LS.PRECISION,     10);
+  settings.echoLatex       = _lsLoad(LS.ECHO_LATEX,    false);
+  settings.deepSimplify    = _lsLoad(LS.DEEP_SIMPLIFY, false);
+  settings.autoClose       = _lsLoad(LS.AUTO_CLOSE,    false);
+  settings.tabSnippets     = _lsLoad(LS.TAB_SNIPPETS,  false);
+  settings.persistentJulia = _lsLoad(LS.PERSISTENT_JULIA, false);
+  settings.hoverExport     = _lsLoad(LS.HOVER_EXPORT,  false);
+  settings.showTerminal    = _lsLoad(LS.SHOW_TERMINAL, false);
 
   // Load Notebook array
   let savedNotebook = _lsLoad(LS.INPUT, null);
@@ -3386,6 +3624,13 @@ document.getElementById('app').addEventListener('scroll', () => {
 
   setWorkerStatus('loading');
   
+  if (settings.showTerminal) {
+    document.getElementById('parse-terminal').classList.add('open');
+  }
+  if (settings.hoverExport) {
+    document.body.classList.add('hover-export');
+  }
+
   // Focus the last block by default
   const lastId = blocks[blocks.length - 1].id;
   const lastTa = document.getElementById(`in-${lastId}`);

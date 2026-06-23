@@ -115,9 +115,11 @@ Throws on unrecoverable parse or evaluation errors.
 """
 function evaluate_expression(latex::AbstractString)::Tuple{String,String}
 
-    # Define the full dispatcher once per call via py"..." string interpolation.
-    # This runs inside the CPython interpreter that SymPy.jl/PyCall wraps.
-    py"""
+# ─────────────────────────────────────────────────────────────────────────────
+# Python SymPy Bridge Setup
+# ─────────────────────────────────────────────────────────────────────────────
+
+py"""
 import sympy
 from sympy import (
     simplify, Symbol, N, dsolve, solve,
@@ -125,9 +127,11 @@ from sympy import (
 )
 from sympy.parsing.latex import parse_latex
 from sympy.parsing.latex.errors import LaTeXParsingError
+import re
 
-def _solve_dispatch(latex_str):
-    import re
+GLOBAL_STATE = {}
+
+def _solve_dispatch(latex_str, use_state=False):
     # ── 0. Pre-process ──────────────────────────────────────────────────────
     # Convert \frac{\partial}{\partial x} -> \frac{d}{d x}
     latex_str = re.sub(r'\\frac\{\\partial\}\{\\partial\s*([a-zA-Z])\}', r'\\frac{d}{d \g<1>}', latex_str)
@@ -135,7 +139,6 @@ def _solve_dispatch(latex_str):
     # ── 1. Parse ────────────────────────────────────────────────────────────
     expr = None
 
-    # ── Equation Interceptor ──────────────────────────────────────────────────
     if "=" in latex_str:
         parts = latex_str.split("=", 1)
         lhs_str, rhs_str = parts[0].strip(), parts[1].strip()
@@ -143,6 +146,15 @@ def _solve_dispatch(latex_str):
             try:
                 lhs_parsed = parse_latex(lhs_str)
                 rhs_parsed = parse_latex(rhs_str)
+                
+                # Check for variable assignment A = ...
+                if use_state and isinstance(lhs_parsed, sympy.Symbol):
+                    if rhs_parsed is not None:
+                        rhs_eval = rhs_parsed.doit()
+                        if use_state:
+                            GLOBAL_STATE[lhs_parsed] = rhs_eval
+                        return f"{to_latex(lhs_parsed)} = {to_latex(rhs_eval)}", "assignment"
+
                 if lhs_parsed is not None and rhs_parsed is not None:
                     # We inject pi, e, i manually since the server.jl injects later
                     fs = (lhs_parsed - rhs_parsed).free_symbols
@@ -212,12 +224,16 @@ def _solve_dispatch(latex_str):
         except Exception as exc:
             raise ValueError(f"Parse error: {exc}") from exc
 
-    # ── 2. Inject standard mathematical constants ────────────────────────────
+    # ── 2. Inject standard mathematical constants and global state ───────────
     fs   = expr.free_symbols
     subs = {}
     if Symbol('pi') in fs: subs[Symbol('pi')] = sympy.pi
     if Symbol('e')  in fs: subs[Symbol('e')]  = sympy.E
     if Symbol('i')  in fs: subs[Symbol('i')]  = sympy.I
+    if use_state:
+        for s in fs:
+            if s in GLOBAL_STATE:
+                subs[s] = GLOBAL_STATE[s]
     if subs:
         expr = expr.subs(subs)
 
@@ -299,7 +315,12 @@ def _solve_dispatch(latex_str):
     return latex_res, method
 """
 
-    tup = py"_solve_dispatch"(latex)
+# ─────────────────────────────────────────────────────────────────────────────
+# Core evaluation engine
+# ─────────────────────────────────────────────────────────────────────────────
+
+function evaluate_expression(latex::AbstractString, use_state::Bool=false)::Tuple{String,String}
+    tup = py"_solve_dispatch"(latex, use_state)
     return String(tup[1]), String(tup[2])
 end
 
@@ -354,9 +375,9 @@ Order of attempts:
   1. SymPy symbolic/numeric (Python bridge).
   2. Roots.jl bisection / derivative-free root finder.
 """
-function safe_evaluate(latex::AbstractString)::Tuple{String,String}
+function safe_evaluate(latex::AbstractString, use_state::Bool=false)::Tuple{String,String}
     try
-        return evaluate_expression(latex)
+        return evaluate_expression(latex, use_state)
     catch sympy_err
         @warn "SymPy failed, trying Roots.jl numerical fallback" error=sprint(showerror, sympy_err)
         try
@@ -402,13 +423,15 @@ function handle_solve(req::HTTP.Request)
         expr_type = detect_expr_type(latex)
         @info "→ Solve request" type=expr_type expression=first(latex, 120)
 
+        use_state = get(body, :persistent, false)
+        
         # ── Evaluate with 20-second hard guardrail ───────────────────────────────
         TIMEOUT_SECS = 20
         result_ch = Channel{Union{Tuple{String,String}, Exception}}(1)
 
         task = @async begin
             try
-                put!(result_ch, safe_evaluate(latex))
+                put!(result_ch, safe_evaluate(latex, use_state))
             catch err
                 put!(result_ch, err)
             end
@@ -461,6 +484,8 @@ function handle_solve_batch(req::HTTP.Request)
         raw = get(body, :expressions, nothing)
         isnothing(raw) && return json_err("Missing 'expressions' field.", 400)
 
+        use_state = get(body, :persistent, false)
+
         results = String[]
         for raw_expr in raw
             latex = strip(String(raw_expr))
@@ -470,7 +495,7 @@ function handle_solve_batch(req::HTTP.Request)
             end
 
             try
-                result_latex, method = safe_evaluate(latex)
+                result_latex, method = safe_evaluate(latex, use_state)
                 push!(results, result_latex)
             catch e
                 msg = sprint(showerror, e)
