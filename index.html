@@ -75,7 +75,7 @@
       position: fixed;
       inset: 0;
       z-index: 10000;
-      background: #050508;
+      background: var(--bg);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -145,16 +145,15 @@
     }
 
     .splash-ring-1 {
-      border-color: rgba(120,80,255,0.7);
+      border-color: var(--caret-col, #8b78ff);
       animation: ringRotate 3s linear infinite;
-      box-shadow: 0 0 12px rgba(120,80,255,0.4), inset 0 0 12px rgba(120,80,255,0.1);
+      box-shadow: 0 0 12px var(--caret-glow, rgba(139,120,255,0.4));
     }
 
     .splash-ring-2 {
       inset: 12px;
-      border-color: rgba(60,200,255,0.5);
+      border-color: color-mix(in srgb, var(--caret-col, #8b78ff) 50%, white);
       animation: ringRotate 2s linear infinite reverse;
-      box-shadow: 0 0 8px rgba(60,200,255,0.3);
     }
 
     .splash-ring-3 {
@@ -171,8 +170,8 @@
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: radial-gradient(circle, #fff 0%, rgba(120,80,255,0.8) 60%, transparent 100%);
-      box-shadow: 0 0 16px rgba(120,80,255,0.8), 0 0 32px rgba(120,80,255,0.4);
+      background: var(--caret-col, #8b78ff);
+      box-shadow: 0 0 16px var(--caret-glow, rgba(139,120,255,0.8));
       animation: dotPulse 2s ease-in-out infinite;
     }
 
@@ -188,30 +187,26 @@
 
     /* ── Logo text ─────────────────────────────────────────── */
     #splash-logo {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: var(--mono);
       font-size: 3.6rem;
       font-weight: 700;
       letter-spacing: 0.25em;
-      color: transparent;
-      background: linear-gradient(135deg, #fff 0%, rgba(120,80,255,0.9) 50%, rgba(60,200,255,0.8) 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
+      color: var(--fg);
       opacity: 0;
       animation: logoReveal 0.8s cubic-bezier(0.2, 0, 0, 1) 0.3s forwards;
-      text-shadow: none;
-      filter: drop-shadow(0 0 24px rgba(120,80,255,0.4));
+      margin-bottom: 0;
     }
 
     @keyframes logoReveal {
-      from { opacity: 0; letter-spacing: 0.6em; filter: blur(12px) drop-shadow(0 0 24px rgba(120,80,255,0.4)); }
-      to   { opacity: 1; letter-spacing: 0.25em; filter: blur(0) drop-shadow(0 0 24px rgba(120,80,255,0.4)); }
+      from { opacity: 0; letter-spacing: 0.6em; filter: blur(10px); }
+      to   { opacity: 1; letter-spacing: 0.25em; filter: blur(0); }
     }
 
     #splash-tagline {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: var(--mono);
       font-size: 0.7rem;
       letter-spacing: 0.3em;
-      color: rgba(255,255,255,0.35);
+      color: var(--fg-dim);
       text-transform: uppercase;
       margin-top: 8px;
       margin-bottom: 48px;
@@ -243,10 +238,10 @@
     #splash-bar-fill {
       height: 100%;
       width: 0%;
-      background: linear-gradient(90deg, rgba(120,80,255,0.9) 0%, rgba(60,200,255,0.9) 100%);
+      background: var(--caret-col);
       border-radius: 999px;
       transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 0 8px rgba(120,80,255,0.6);
+      box-shadow: 0 0 8px var(--caret-glow, rgba(139,120,255,0.5));
     }
 
     /* shimmer sweep */
@@ -266,24 +261,25 @@
 
     #splash-step-text {
       margin-top: 14px;
-      font-family: 'JetBrains Mono', monospace;
+      font-family: var(--mono);
       font-size: 0.65rem;
       letter-spacing: 0.12em;
-      color: rgba(255,255,255,0.4);
+      color: var(--fg-dim);
       min-height: 1.4em;
       transition: opacity 0.2s;
     }
 
     #splash-step-text .step-prefix {
-      color: rgba(120,80,255,0.7);
+      color: var(--caret-col);
     }
 
     #splash-percent {
       margin-top: 6px;
-      font-family: 'JetBrains Mono', monospace;
+      font-family: var(--mono);
       font-size: 0.6rem;
       letter-spacing: 0.1em;
-      color: rgba(255,255,255,0.2);
+      color: var(--fg-dim);
+      opacity: 0.5;
     }
 
     /* ── Floating math ambient field ────────────────────────── */
@@ -339,13 +335,13 @@
       width: 60px;
       height: 60px;
       border-radius: 50%;
-      border: 2px solid rgba(60,255,140,0.8);
-      box-shadow: 0 0 30px rgba(60,255,140,0.5), inset 0 0 20px rgba(60,255,140,0.1);
+      border: 2px solid var(--caret-col);
+      box-shadow: 0 0 30px var(--caret-glow, rgba(139,120,255,0.5));
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 1.5rem;
-      color: rgba(60,255,140,0.9);
+      color: var(--caret-col);
     }
 
     /* ── Floating drift animation for ambient field ─────────── */
@@ -1257,12 +1253,6 @@
   <canvas id="splash-canvas"></canvas>
   <div class="matrix-field" id="matrix-field"></div>
   <div id="splash-center">
-    <div id="splash-eye">
-      <div class="splash-ring splash-ring-1"></div>
-      <div class="splash-ring splash-ring-2"></div>
-      <div class="splash-ring splash-ring-3"></div>
-      <div class="splash-ring-dot"></div>
-    </div>
     <div id="splash-logo">PARSE</div>
     <div id="splash-tagline">Live LaTeX Calculation Engine</div>
     <div id="splash-loader">
@@ -3701,33 +3691,37 @@ document.getElementById('app').addEventListener('scroll', () => {
     let W = canvas.width = window.innerWidth;
     let H = canvas.height = window.innerHeight;
     
-    const PARTICLE_COUNT = 120;
+    // Read the theme accent color from CSS variables at runtime
+    const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--caret-col').trim() || '#8b78ff';
+
+    const PARTICLE_COUNT = 80;
     const particles = Array.from({ length: PARTICLE_COUNT }, () => ({
       x: Math.random() * W,
       y: Math.random() * H,
-      vx: (Math.random() - 0.5) * 0.25,
-      vy: (Math.random() - 0.5) * 0.25,
-      r: Math.random() * 1.2 + 0.3,
-      alpha: Math.random() * 0.4 + 0.1,
-      hue: Math.random() > 0.6 ? 250 : 200  // purple or cyan
+      vx: (Math.random() - 0.5) * 0.2,
+      vy: (Math.random() - 0.5) * 0.2,
+      r: Math.random() * 1.0 + 0.2,
+      alpha: Math.random() * 0.18 + 0.04,
     }));
 
     let animFrame;
     function drawParticles() {
       ctx.clearRect(0, 0, W, H);
-      // Draw connections first
+      // Draw connections
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
           const dx = particles[i].x - particles[j].x;
           const dy = particles[i].y - particles[j].y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 90) {
+          if (dist < 100) {
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `hsla(${particles[i].hue}, 70%, 65%, ${(1 - dist / 90) * 0.08})`;
+            ctx.strokeStyle = accentColor;
+            ctx.globalAlpha = (1 - dist / 100) * 0.06;
             ctx.lineWidth = 0.5;
             ctx.stroke();
+            ctx.globalAlpha = 1;
           }
         }
       }
@@ -3735,8 +3729,10 @@ document.getElementById('app').addEventListener('scroll', () => {
       for (const p of particles) {
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${p.hue}, 80%, 75%, ${p.alpha})`;
+        ctx.fillStyle = accentColor;
+        ctx.globalAlpha = p.alpha;
         ctx.fill();
+        ctx.globalAlpha = 1;
         p.x += p.vx; p.y += p.vy;
         if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
         if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'parse-calc-v2';
+const CACHE_NAME = 'parse-calc-v3';
 
 // We intercept all requests. For standard app assets, we cache them.
 // For Pyodide CDN assets, we cache them dynamically as they are requested.
