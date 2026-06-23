@@ -923,10 +923,10 @@
     #benchmark-overlay.open { opacity: 1; pointer-events: auto; }
     #benchmark-modal {
       background: var(--bg); color: var(--fg); padding: 2.5rem;
-      width: 90%; max-width: 700px; border-radius: 16px; border: 1px solid var(--panel-border);
+      width: 95%; max-width: 1000px; border-radius: 16px; border: 1px solid var(--panel-border);
       font-family: var(--sans); box-shadow: inset 0 0 40px rgba(255,255,255,0.02), 0 24px 60px rgba(0,0,0,0.6); position: relative;
     }
-    .benchmark-grid { display: flex; gap: 2rem; margin-top: 1.5rem; }
+    .benchmark-grid { display: flex; gap: 24px; margin-top: 1.5rem; }
     .benchmark-col {
       flex: 1;
       background: var(--panel-bg);
@@ -972,6 +972,33 @@
     .bm-score span.loser { opacity: 0.6; }
     #benchmark-close { position: absolute; top: 1rem; right: 1rem; background: transparent; border: none; color: var(--fg-dim); cursor: pointer; font-family: var(--mono); font-size: 1rem; }
     #benchmark-close:hover { color: var(--fg); }
+
+    .benchmark-suite-select {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-color: var(--bg);
+      color: var(--fg);
+      border: 1px solid var(--panel-border, rgba(136, 136, 136, 0.3));
+      padding: 8px 36px 8px 12px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      cursor: pointer;
+      background-image: url('data:image/svg+xml;utf8,<svg fill="%23888" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .benchmark-suite-select:focus {
+      outline: none;
+      border-color: var(--caret-col);
+      box-shadow: 0 0 8px var(--caret-glow);
+    }
+    .benchmark-suite-select option {
+      background-color: var(--bg);
+      color: var(--fg);
+    }
 
     .bench-actions {
       display: flex;
@@ -1470,6 +1497,15 @@
     
     <div id="benchmark-cooldown" style="display:none; text-align:center; color:var(--caret-col); font-weight:bold; margin-bottom: 1rem;">Cooldown...</div>
 
+    <div class="benchmark-suite-selector" style="text-align: center; margin-bottom: 1.5rem;">
+      <label for="benchmark-suite" style="margin-right: 0.5rem; font-weight: 500; color: var(--fg-dim);">Test Suite:</label>
+      <select id="benchmark-suite" class="benchmark-suite-select">
+        <option value="standard">Standard Mixed</option>
+        <option value="numeric">The Numerical Crush</option>
+        <option value="linalg">Linear Algebra Stress</option>
+      </select>
+    </div>
+
     <div class="benchmark-grid">
       <div class="benchmark-col" id="col-wasm">
         <h3>Browser Engine (WASM)</h3>
@@ -1521,9 +1557,23 @@
       </div>
     </div>
     
-    <div class="bench-actions">
-      <button class="btn-secondary" onclick="_runBenchmark('standard')" id="btn-bench-std">Run Standard</button>
-      <button class="btn-primary" onclick="_runBenchmark('extreme')" id="btn-bench-extreme">Run Extreme Stress</button>
+    <div class="benchmark-graph-container" style="display: flex; justify-content: space-around; align-items: flex-end; height: 150px; margin: 2rem 0 1rem 0; border-bottom: 1px solid var(--panel-border); padding-bottom: 0.5rem; position: relative;">
+      <div class="bm-bar-wrap" style="display: flex; flex-direction: column; align-items: center; width: 60px; height: 100%; justify-content: flex-end;">
+        <div class="bm-bar-value" id="wasm-graph-val" style="margin-bottom: 0.25rem; font-size: 0.8rem; color: var(--fg); font-weight: 600; opacity: 0; transition: opacity 0.3s;">--</div>
+        <div class="bm-bar-fill" id="wasm-graph-bar" style="width: 100%; height: 0%; border-radius: 6px 6px 0 0; background: linear-gradient(0deg, rgba(139,233,253,0.2) 0%, rgba(139,233,253,0.8) 100%); transition: height 1s cubic-bezier(0.2, 0.8, 0.2, 1);"></div>
+      </div>
+      <div class="bm-bar-wrap" style="display: flex; flex-direction: column; align-items: center; width: 60px; height: 100%; justify-content: flex-end;">
+        <div class="bm-bar-value" id="native-graph-val" style="margin-bottom: 0.25rem; font-size: 0.8rem; color: var(--fg); font-weight: 600; opacity: 0; transition: opacity 0.3s;">--</div>
+        <div class="bm-bar-fill" id="native-graph-bar" style="width: 100%; height: 0%; border-radius: 6px 6px 0 0; background: linear-gradient(0deg, rgba(189,147,249,0.2) 0%, rgba(189,147,249,0.8) 100%); transition: height 1s cubic-bezier(0.2, 0.8, 0.2, 1);"></div>
+      </div>
+      <div class="bm-bar-wrap" style="display: flex; flex-direction: column; align-items: center; width: 60px; height: 100%; justify-content: flex-end;">
+        <div class="bm-bar-value" id="scipy-graph-val" style="margin-bottom: 0.25rem; font-size: 0.8rem; color: var(--fg); font-weight: 600; opacity: 0; transition: opacity 0.3s;">--</div>
+        <div class="bm-bar-fill" id="scipy-graph-bar" style="width: 100%; height: 0%; border-radius: 6px 6px 0 0; background: linear-gradient(0deg, rgba(80,250,123,0.2) 0%, rgba(80,250,123,0.8) 100%); transition: height 1s cubic-bezier(0.2, 0.8, 0.2, 1);"></div>
+      </div>
+    </div>
+
+    <div class="bench-actions" style="margin-top: 1rem;">
+      <button class="btn-primary" onclick="_runBenchmark()" id="btn-bench-run" style="width: 100%;">Run Benchmark Suite</button>
     </div>
   </div>
 </div>
@@ -1952,18 +2002,41 @@ function _setStageStatus(engine, stage, status, ms = 0, errMsg = '') {
   }
 }
 
-function _runBenchmark(mode = 'standard') {
-  const stdBtn = document.getElementById('btn-bench-std');
-  const extBtn = document.getElementById('btn-bench-extreme');
-  if (stdBtn) stdBtn.disabled = true;
-  if (extBtn) extBtn.disabled = true;
+function _getBenchmarkPayload() {
+  const mode = document.getElementById('benchmark-suite').value || 'standard';
+  if (mode === 'numeric') {
+    return {
+      p1: '\\int_{0}^{10} \\sin(x^2) dx',
+      p2: '\\int_{0}^{\\pi} e^{\\cos(x)} dx',
+      p3: '100000!',
+      loops2: 50,
+      titles: ['Stage 1: Fresnel Integral', 'Stage 2: Batch Integrate (50 Ops)', 'Stage 3: 100k Factorial']
+    };
+  } else if (mode === 'linalg') {
+    return {
+      p1: '\\det \\begin{bmatrix} 1 & 2 & 3 & 4 \\\\ 5 & 6 & 7 & 8 \\\\ 9 & 10 & 11 & 12 \\\\ 13 & 14 & 15 & 16 \\end{bmatrix}',
+      p2: '\\begin{bmatrix} 1 & 2 \\\\ 3 & 4 \\end{bmatrix}^{-1}',
+      p3: '(x + y + z + w)^{15}',
+      loops2: 50,
+      titles: ['Stage 1: 4x4 Determinant', 'Stage 2: Batch Invert (50 Ops)', 'Stage 3: Deep Expansion']
+    };
+  } else {
+    return {
+      p1: '\\int \\frac{x^4}{\\sqrt{1 - x^2}} \\, dx',
+      p2: 'x^2 - 5x + 6 = 0',
+      p3: '\\frac{d^2}{dx^2} \\left[ \\sin(x^3) \\cdot e^{\\cos(x)} \\cdot \\ln(x^2 + 1) \\right]',
+      loops2: 100,
+      titles: ['Stage 1: Cold Start', 'Stage 2: Throughput (100 Ops)', 'Stage 3: CPU Stress']
+    };
+  }
+}
+
+function _runBenchmark() {
+  const runBtn = document.getElementById('btn-bench-run');
+  if (runBtn) runBtn.disabled = true;
   
-  const loops2 = mode === 'extreme' ? 50 : 100;
-  const stageTitles = mode === 'extreme' ? [
-    'Stage 1: Deep Expansion', `Stage 2: Limits (${loops2} Ops)`, 'Stage 3: Nested Chaos'
-  ] : [
-    'Stage 1: Cold Start', `Stage 2: Throughput (${loops2} Ops)`, 'Stage 3: CPU Stress'
-  ];
+  const payload = _getBenchmarkPayload();
+  const stageTitles = payload.titles;
 
   ['wasm', 'native', 'scipy'].forEach(engine => {
     const s1 = document.getElementById(`${engine}-stage1`);
@@ -1989,9 +2062,17 @@ function _runBenchmark(mode = 'standard') {
   document.getElementById('native-score').classList.remove('winner', 'loser');
   document.getElementById('scipy-score').classList.remove('winner', 'loser');
 
+  // Reset graph bars
+  ['wasm', 'native', 'scipy'].forEach(engine => {
+    const bar = document.getElementById(`${engine}-graph-bar`);
+    const val = document.getElementById(`${engine}-graph-val`);
+    if(bar) bar.style.height = '0%';
+    if(val) { val.textContent = '--'; val.style.opacity = '0'; }
+  });
+
   document.body.classList.add('computing-wasm-card');
 
-  _runBenchmarkWasm(mode).then(wasmScore => {
+  _runBenchmarkWasm().then(wasmScore => {
     document.body.classList.remove('computing-wasm-card');
     document.getElementById('wasm-score').textContent = wasmScore > 0 ? wasmScore.toLocaleString() : 'Error';
     
@@ -2009,14 +2090,13 @@ function _runBenchmark(mode = 'standard') {
         cdDiv.style.display = 'none';
         
         document.body.classList.add('computing-scipy-card');
-        _runBenchmarkScipy(mode).then(scipyScore => {
+        _runBenchmarkScipy().then(scipyScore => {
           document.body.classList.remove('computing-scipy-card');
           document.getElementById('scipy-score').textContent = scipyScore > 0 ? scipyScore.toLocaleString() : 'Error';
 
           if (!juliaEngineConnected) {
             document.getElementById('native-score').textContent = 'Offline';
-            if (stdBtn) stdBtn.disabled = false;
-            if (extBtn) extBtn.disabled = false;
+            if (runBtn) runBtn.disabled = false;
             _compare3Scores(wasmScore, scipyScore, -1);
             return;
           }
@@ -2034,11 +2114,10 @@ function _runBenchmark(mode = 'standard') {
               cdDiv.style.display = 'none';
               
               document.body.classList.add('computing-julia-card');
-              _runBenchmarkNative(mode).then(nativeScore => {
+              _runBenchmarkNative().then(nativeScore => {
                 document.body.classList.remove('computing-julia-card');
                 document.getElementById('native-score').textContent = nativeScore > 0 ? nativeScore.toLocaleString() : 'Error';
-                if (stdBtn) stdBtn.disabled = false;
-                if (extBtn) extBtn.disabled = false;
+                if (runBtn) runBtn.disabled = false;
       
                 _compare3Scores(wasmScore, scipyScore, nativeScore);
               });
@@ -2052,14 +2131,29 @@ function _runBenchmark(mode = 'standard') {
 
 function _compare3Scores(wScore, sScore, nScore) {
   const scores = [];
-  if (wScore > 0) scores.push({ id: 'wasm-score', val: wScore });
-  if (sScore > 0) scores.push({ id: 'scipy-score', val: sScore });
-  if (nScore > 0) scores.push({ id: 'native-score', val: nScore });
+  if (wScore > 0) scores.push({ id: 'wasm-score', engine: 'wasm', val: wScore });
+  if (sScore > 0) scores.push({ id: 'scipy-score', engine: 'scipy', val: sScore });
+  if (nScore > 0) scores.push({ id: 'native-score', engine: 'native', val: nScore });
   
-  if (scores.length > 1) {
+  if (scores.length > 0) {
     scores.sort((a,b) => b.val - a.val);
-    document.getElementById(scores[0].id).classList.add('winner');
-    document.getElementById(scores[scores.length-1].id).classList.add('loser');
+    const highestScore = scores[0].val;
+    if (scores.length > 1) {
+      document.getElementById(scores[0].id).classList.add('winner');
+      document.getElementById(scores[scores.length-1].id).classList.add('loser');
+    }
+    
+    // Animate CSS bar chart
+    scores.forEach(s => {
+      const bar = document.getElementById(`${s.engine}-graph-bar`);
+      const val = document.getElementById(`${s.engine}-graph-val`);
+      if (bar && val) {
+        const heightPct = Math.max(5, (s.val / highestScore) * 100);
+        bar.style.height = heightPct + '%';
+        val.textContent = s.val.toLocaleString();
+        val.style.opacity = '1';
+      }
+    });
   }
 }
 
@@ -2095,12 +2189,10 @@ async function _benchmarkWasmEval(latexStr, timeoutMs = 15000, settings = {}) {
   });
 }
 
-async function _runBenchmarkScipy(mode = 'standard') {
+async function _runBenchmarkScipy() {
   let totalTime = 0;
-  const p1 = '\\int_{0}^{1} e^{-x^2} dx'; // Brutal definite integral for SciPy quad
-  const p2 = mode === 'extreme' ? '\\lim_{x \\to 0} \\frac{\\sin(x) - x + \\frac{x^3}{6}}{x^5}' : 'x^2 - 5x + 6 = 0';
-  const p3 = mode === 'extreme' ? '\\int \\sin(\\cos(\\sin(x))) dx' : '\\frac{d^2}{dx^2} \\left[ \\sin(x^3) \\cdot e^{\\cos(x)} \\cdot \\ln(x^2 + 1) \\right]';
-  const loops2 = mode === 'extreme' ? 50 : 100;
+  const payload = _getBenchmarkPayload();
+  const { p1, p2, p3, loops2 } = payload;
   
   // Set numeric mode for this run
   const testSettings = { numericMode: true };
@@ -2149,12 +2241,10 @@ async function _runBenchmarkScipy(mode = 'standard') {
   return Math.max(1, Math.floor(10000000 / totalTime));
 }
 
-async function _runBenchmarkWasm(mode = 'standard') {
+async function _runBenchmarkWasm() {
   let totalTime = 0;
-  const p1 = mode === 'extreme' ? '(x + y + z)^{25}' : '\\int \\frac{x^4}{\\sqrt{1 - x^2}} \\, dx';
-  const p2 = mode === 'extreme' ? '\\lim_{x \\to 0} \\frac{\\sin(x) - x + \\frac{x^3}{6}}{x^5}' : 'x^2 - 5x + 6 = 0';
-  const p3 = mode === 'extreme' ? '\\int \\sin(\\cos(\\sin(x))) dx' : '\\frac{d^2}{dx^2} \\left[ \\sin(x^3) \\cdot e^{\\cos(x)} \\cdot \\ln(x^2 + 1) \\right]';
-  const loops2 = mode === 'extreme' ? 50 : 100;
+  const payload = _getBenchmarkPayload();
+  const { p1, p2, p3, loops2 } = payload;
   
   // Stage 1
   _setStageStatus('wasm', 1, 'computing');
@@ -2237,12 +2327,10 @@ async function _runJuliaWarmup() {
   }
 }
 
-async function _runBenchmarkNative(mode = 'standard') {
+async function _runBenchmarkNative() {
   let totalTime = 0;
-  const p1 = mode === 'extreme' ? '(x + y + z)^{25}' : '\\int \\frac{x^4}{\\sqrt{1 - x^2}} \\, dx';
-  const p2 = mode === 'extreme' ? '\\lim_{x \\to 0} \\frac{\\sin(x) - x + \\frac{x^3}{6}}{x^5}' : 'x^2 - 5x + 6 = 0';
-  const p3 = mode === 'extreme' ? '\\int \\sin(\\cos(\\sin(x))) dx' : '\\frac{d^2}{dx^2} \\left[ \\sin(x^3) \\cdot e^{\\cos(x)} \\cdot \\ln(x^2 + 1) \\right]';
-  const loops2 = mode === 'extreme' ? 50 : 100;
+  const payload = _getBenchmarkPayload();
+  const { p1, p2, p3, loops2 } = payload;
 
   await _runJuliaWarmup();
 
