@@ -38,6 +38,39 @@ API:
     Returns: { "status": "ok", "engine": "Julia + SymPy" }
 """
 
+using Pkg
+
+# List of all packages our desktop server requires
+required_packages = ["PyCall", "SymPy", "HTTP", "JSON"]
+
+# Force check using low-level Base path identification
+for pkg in required_packages
+    try
+        # Attempt to locate the package directory path natively
+        path = Base.find_package(pkg)
+        if path === nothing
+            throw(ArgumentError("Not found"))
+        end
+    catch
+        println("📦 Package $pkg is hidden or missing. Installing in user space...")
+        try
+            Pkg.add(pkg)
+        catch e
+            println("❌ Core installer execution failed for $pkg: ", e)
+        end
+    end
+end
+
+# Ultimate Pre-flight synchronization catch
+try
+    using PyCall
+    using SymPy
+catch e
+    println("🔄 Forcing secondary environment initialization path...")
+    Pkg.instantiate()
+    Pkg.precompile()
+end
+
 using HTTP
 using JSON3
 using SymPy
