@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="manifest.json">
   <title>Parse | A Weird LaTeX CAS</title>
   <meta name="description" content="A live LaTeX calculator powered by Pyodide and SymPy. Type math, see results instantly." />
 
@@ -2491,6 +2492,7 @@ function sendToWorker(blockId, latex) {
 
   requestSequence++;
   block.latestSeq = requestSequence;
+  block.astTraceStarted = false; // Reset AST trace flag on new request
 
   if (readyCount < WORKER_COUNT) {
     pendingQueue.set(blockId, { latex, sequenceId: requestSequence });
@@ -2628,6 +2630,40 @@ function _handleWorkerResponse(block, data) {
       plotContainer.innerHTML = '';
     }
 
+    // ── Asynchronous "Fast-Then-Slow" AST Steps Pipeline ─────────
+    if (block.activeWorkerIndex !== undefined && workers[block.activeWorkerIndex] && !block.astTraceStarted) {
+      block.astTraceStarted = true;
+      const constants = getGlobalConstants();
+      workers[block.activeWorkerIndex].worker.postMessage({
+        id: block.latestSeq,
+        blockId: block.id,
+        type: 'evaluate_steps',
+        latexInput: block.latex,
+        settings: {
+          assumeReal:    settings.assumeReal,
+          useDegrees:    settings.useDegrees,
+          precision:     settings.precision,
+          deepSimplify:  settings.deepSimplify,
+          numericMode:   settings.numericMode,
+          context:       constants
+        }
+      });
+      // Keep worker marked as busy so it doesn't pick up other tasks
+      workers[block.activeWorkerIndex].idle = false;
+    }
+
+  } else if (data.status === 'steps') {
+    terminalLog(`[SYS] AST Trace Complete:`, 'info');
+    if (data.steps && data.steps.length > 0) {
+      data.steps.forEach(step => {
+        terminalLog(`> ${step}`, 'log');
+      });
+    } else {
+      terminalLog(`> No steps available for this expression.`, 'log');
+    }
+    if (block.activeWorkerIndex !== undefined && workers[block.activeWorkerIndex]) {
+      workers[block.activeWorkerIndex].idle = true;
+    }
   } else if (data.status === 'incomplete') {
     _scheduleErrorGlow();
     _hideApprox(block.id);
@@ -2986,7 +3022,7 @@ function _generateId() {
 
 function _createBlock(initialLatex = '', approx = null, focusAfter = false) {
   const blockId = _generateId();
-  const block = { id: blockId, latex: initialLatex, approx: approx, latestSeq: 0 };
+  const block = { id: blockId, latex: initialLatex, approx: approx, latestSeq: 0, astTraceStarted: false };
   blocks.push(block);
 
   const container = document.getElementById('blocks-container');
@@ -3393,6 +3429,12 @@ document.getElementById('app').addEventListener('scroll', () => {
 
 
 (function init() {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW error:', err));
+    });
+  }
+
   // Cinematic Intro Initialization
   const splashScreen = document.getElementById('splash-screen');
   const matrixField = document.getElementById('matrix-field');

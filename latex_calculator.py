@@ -44,7 +44,10 @@ from sympy import (
     airyai, airybi,
     # Elliptic integrals
     elliptic_k, elliptic_e,
+    # AST and Steps
+    srepr, Integral
 )
+from sympy.integrals.manualintegrate import integral_steps
 from sympy.parsing.latex import parse_latex
 from sympy.parsing.latex.errors import LaTeXParsingError
 
@@ -791,3 +794,112 @@ def _error(msg: str) -> str:
 def _short(exc: Exception, max_len: int = 120) -> str:
     msg = str(exc)
     return (msg[:max_len] + "\u2026") if len(msg) > max_len else msg
+
+def evaluate_steps(latex_input: str, settings_json: str = '{}') -> str:
+    """
+    Parses LaTeX and generates an array of calculation steps.
+    For integrals, it returns human-readable integration techniques.
+    For other expressions, it returns a breakdown of the Abstract Syntax Tree (AST).
+    """
+    if len(latex_input) > MAX_INPUT_LENGTH:
+        return json.dumps({"status": "steps", "steps": ["Expression too long for step trace."]})
+
+    try:
+        settings = json.loads(settings_json)
+    except Exception:
+        settings = {}
+
+    try:
+        expr, _ = _preprocess_and_parse(latex_input, settings)
+    except Exception as e:
+        return json.dumps({"status": "steps", "steps": [f"Parse error: {_short(e)}"]})
+
+    steps_out = []
+    
+    try:
+        # Check if the primary structure is an integral
+        if isinstance(expr, Integral) or getattr(expr, 'func', None) == Integral:
+            integrand = expr.args[0]
+            var = expr.args[1][0] if len(expr.args) > 1 and len(expr.args[1]) > 0 else None
+            
+            if var is not None:
+                steps_obj = integral_steps(integrand, var)
+                
+                # Recursively extract step descriptions from the Rule tree
+                def extract_rules(rule, depth=1):
+                    if not rule:
+                        return
+                    rule_name = rule.__class__.__name__
+                    if "Rule" in rule_name:
+                        rule_name = rule_name.replace("Rule", "")
+                    
+                    indent = "  " * (depth - 1)
+                    
+                    if rule_name == "URule":
+                        u_var, u_func, du, *_ = rule.args if hasattr(rule, 'args') else (None, getattr(rule, 'u_func', '?'), getattr(rule, 'du', '?'))
+                        steps_out.append(f"{indent}• U-Substitution: u = {u_func}")
+                    elif rule_name == "Parts":
+                        u, dv, v, *_ = rule.args if hasattr(rule, 'args') else (getattr(rule, 'u', '?'), getattr(rule, 'dv', '?'), getattr(rule, 'v', '?'))
+                        steps_out.append(f"{indent}• Integration by Parts: u = {u}, dv = {dv}")
+                    elif rule_name == "ConstantTimes":
+                        steps_out.append(f"{indent}• Pull out constant")
+                    elif rule_name == "Add":
+                        steps_out.append(f"{indent}• Split into sum")
+                    elif rule_name == "Power":
+                        steps_out.append(f"{indent}• Power Rule")
+                    elif rule_name == "Trig":
+                        steps_out.append(f"{indent}• Trigonometric Rule")
+                    elif rule_name == "Exp":
+                        steps_out.append(f"{indent}• Exponential Rule")
+                    elif rule_name == "Arctan":
+                        steps_out.append(f"{indent}• Arctan Rule")
+                    elif rule_name == "Log":
+                        steps_out.append(f"{indent}• Logarithm Rule")
+                    elif rule_name == "Alternative":
+                        pass # Transparent
+                    elif rule_name == "DontKnow":
+                        steps_out.append(f"{indent}• Unknown technique")
+                    else:
+                        steps_out.append(f"{indent}• {rule_name} Rule")
+                        
+                    # Recurse into substeps if available
+                    if hasattr(rule, 'substep') and rule.substep:
+                        extract_rules(rule.substep, depth + 1)
+                    elif hasattr(rule, 'substeps') and rule.substeps:
+                        for sub in rule.substeps:
+                            extract_rules(sub, depth + 1)
+
+                extract_rules(steps_obj)
+            
+            if not steps_out:
+                 steps_out.append("No step-by-step integration rules found.")
+                 
+        else:
+            # Fallback to AST trace
+            ast_str = srepr(expr)
+            # Break it down into readable chunks for the console
+            chunks = ast_str.replace("(", "(\n  ").replace(")", "\n)").split("\n")
+            indent = 0
+            for chunk in chunks:
+                c = chunk.strip()
+                if not c: continue
+                if c == ")":
+                    indent = max(0, indent - 1)
+                elif c.startswith(")"):
+                    indent = max(0, indent - c.count(")"))
+                    
+                steps_out.append(("  " * indent) + c)
+                
+                if c.endswith("("):
+                    indent += 1
+
+    except Exception as e:
+        steps_out.append(f"Failed to generate steps: {_short(e)}")
+
+    if not steps_out:
+        steps_out.append("No AST trace available.")
+
+    return json.dumps({
+        "status": "steps",
+        "steps": steps_out
+    })

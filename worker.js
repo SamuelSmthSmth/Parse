@@ -88,11 +88,18 @@ self.onmessage = async ({ data }) => {
   }
 
   try {
-    // evaluate_latex always returns a JSON string and never throws.
-    const evaluate = pyodide.globals.get("evaluate_latex");
-    const jsonStr  = evaluate(latexInput, settingsJson);
-    const response = JSON.parse(jsonStr);
-    self.postMessage({ id, blockId, ...response });
+    if (data.type === 'evaluate_steps') {
+      const evaluate = pyodide.globals.get("evaluate_steps");
+      const jsonStr  = evaluate(latexInput, settingsJson);
+      const response = JSON.parse(jsonStr);
+      self.postMessage({ id, blockId, ...response });
+    } else {
+      // evaluate_latex always returns a JSON string and never throws.
+      const evaluate = pyodide.globals.get("evaluate_latex");
+      const jsonStr  = evaluate(latexInput, settingsJson);
+      const response = JSON.parse(jsonStr);
+      self.postMessage({ id, blockId, ...response });
+    }
   } catch (err) {
     // Safety net — should never be reached because evaluate_latex is defensive.
     self.postMessage({
