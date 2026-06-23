@@ -309,7 +309,7 @@
       position: absolute;
       top: 0;
       left: 0;
-      color: rgba(255,255,255,0.07) !important;
+      color: rgba(255,255,255,0.2) !important;
       white-space: nowrap;
       will-change: transform, opacity;
       font-size: 0.85rem;
@@ -319,7 +319,7 @@
     /* Force KaTeX inside splash to use very dim colour */
     #splash-screen .katex,
     #splash-screen .katex * {
-      color: rgba(255,255,255,0.07) !important;
+      color: rgba(255,255,255,0.2) !important;
       transition: none !important;
     }
 
@@ -1623,14 +1623,14 @@ function _applyAmbientParticles() {
     
     let accentColor = getComputedStyle(document.documentElement).getPropertyValue('--caret-col').trim() || '#8b78ff';
 
-    const PARTICLE_COUNT = 80;
+    const PARTICLE_COUNT = 60;
     const particles = Array.from({ length: PARTICLE_COUNT }, () => ({
       x: Math.random() * W,
       y: Math.random() * H,
-      vx: (Math.random() - 0.5) * 0.2,
-      vy: (Math.random() - 0.5) * 0.2,
-      r: Math.random() * 1.0 + 0.2,
-      alpha: Math.random() * 0.18 + 0.04,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      r: Math.random() * 4.0 + 2.0, // Much larger particles
+      alpha: Math.random() * 0.35 + 0.15,
     }));
 
     function drawParticles() {
@@ -1640,12 +1640,12 @@ function _applyAmbientParticles() {
           const dx = particles[i].x - particles[j].x;
           const dy = particles[i].y - particles[j].y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 100) {
+          if (dist < 120) { // Occasional lines when they get reasonably close
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
             ctx.strokeStyle = accentColor;
-            ctx.globalAlpha = (1 - dist / 100) * 0.06;
+            ctx.globalAlpha = (1 - dist / 120) * 0.25;
             ctx.lineWidth = 0.5;
             ctx.stroke();
             ctx.globalAlpha = 1;
@@ -3805,14 +3805,14 @@ document.getElementById('app').addEventListener('scroll', () => {
     // Read the theme accent color from CSS variables at runtime
     const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--caret-col').trim() || '#8b78ff';
 
-    const PARTICLE_COUNT = 80;
+    const PARTICLE_COUNT = 60;
     const particles = Array.from({ length: PARTICLE_COUNT }, () => ({
       x: Math.random() * W,
       y: Math.random() * H,
-      vx: (Math.random() - 0.5) * 0.2,
-      vy: (Math.random() - 0.5) * 0.2,
-      r: Math.random() * 1.0 + 0.2,
-      alpha: Math.random() * 0.18 + 0.04,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      r: Math.random() * 4.0 + 2.0, // Much larger particles
+      alpha: Math.random() * 0.35 + 0.15,
     }));
 
     let animFrame;
@@ -3824,12 +3824,12 @@ document.getElementById('app').addEventListener('scroll', () => {
           const dx = particles[i].x - particles[j].x;
           const dy = particles[i].y - particles[j].y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 100) {
+          if (dist < 120) { // Occasional lines when they get reasonably close
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
             ctx.strokeStyle = accentColor;
-            ctx.globalAlpha = (1 - dist / 100) * 0.06;
+            ctx.globalAlpha = (1 - dist / 120) * 0.25;
             ctx.lineWidth = 0.5;
             ctx.stroke();
             ctx.globalAlpha = 1;
@@ -3892,10 +3892,9 @@ document.getElementById('app').addEventListener('scroll', () => {
       span.style.top  = py;
       const delay = (Math.random() * 5).toFixed(2);
       const duration = (8 + Math.random() * 6).toFixed(2);
-      // Simple fade in/out with slight upward drift
       const drift = (Math.random() * 30 - 15).toFixed(0);
       span.style.animation = `none`;
-      span.style.opacity = (Math.random() * 0.06 + 0.02).toFixed(2);
+      span.style.opacity = (Math.random() * 0.15 + 0.1).toFixed(2);
       // Stagger-fade using a keyframe via style
       span.style.animationName = 'ambientFade';
       span.style.animationDuration = duration + 's';
