@@ -654,15 +654,37 @@ def _evaluate_latex_impl(latex_input: str, settings_json: str = None) -> str:
 
     # ── Evaluate ──────────────────────────────────────────────────────────────
     use_deep_simplify = bool(settings.get('deepSimplify', False))
+    numeric_mode = bool(settings.get('numericMode', False))
+
     try:
-        evaluated = expr.doit()
-        if use_deep_simplify:
-            # Heavy path: full SymPy simplify() heuristic search.
-            # Only triggered when the user explicitly enables Deep Simplify.
-            result = simplify(evaluated)
+        if numeric_mode:
+            from sympy import Integral, lambdify, sympify
+            import scipy.integrate
+            
+            if isinstance(expr, Integral) and len(expr.limits) == 1 and len(expr.limits[0]) == 3:
+                var, a, b = expr.limits[0]
+                try:
+                    a_val = float(a.evalf())
+                    b_val = float(b.evalf())
+                    f_lamb = lambdify(var, expr.function, 'scipy')
+                    val, err = scipy.integrate.quad(f_lamb, a_val, b_val)
+                    result = sympify(val)
+                    evaluated = result
+                except Exception:
+                    evaluated = expr.evalf(15)
+                    result = evaluated
+            else:
+                evaluated = expr.evalf(15)
+                result = evaluated
         else:
-            # Fast path: expand + cancel cascade (~10-100x faster).
-            result = _fast_simplify(evaluated)
+            evaluated = expr.doit()
+            if use_deep_simplify:
+                # Heavy path: full SymPy simplify() heuristic search.
+                # Only triggered when the user explicitly enables Deep Simplify.
+                result = simplify(evaluated)
+            else:
+                # Fast path: expand + cancel cascade (~10-100x faster).
+                result = _fast_simplify(evaluated)
 
     except NotImplementedError as exc:
         return _error(f"Cannot evaluate (no closed form): {_short(exc)}")

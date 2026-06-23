@@ -20,22 +20,8 @@
     /* ════════════════════════════════════════════════════════════════
        CSS CUSTOM PROPERTIES  (dark default, light override)
     ════════════════════════════════════════════════════════════════ */
+
     :root {
-      --bg:           #0b0b0e;
-      --fg:           #dcdce8;
-      --fg-dim:       rgba(220, 220, 232, 0.20);
-      --fg-subtle:    rgba(220, 220, 232, 0.10);
-      --divider:      rgba(220, 220, 232, 0.055);
-      --caret-col:    #8b78ff;
-      --caret-glow:   rgba(139, 120, 255, 0.50);
-      --caret-err:    #ff6b6b;
-      --caret-err-glow: rgba(255, 107, 107, 0.45);
-      --pill-bg:      rgba(255, 255, 255, 0.055);
-      --pill-border:  rgba(255, 255, 255, 0.09);
-      --err:          #ff6b6b;
-      --panel-bg:     rgba(11, 11, 16, 0.88);
-      --panel-border: rgba(255, 255, 255, 0.07);
-      --toggle-on:    #8b78ff;
       --mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
       --sans: 'Inter', system-ui, sans-serif;
       --ease: cubic-bezier(0.4, 0, 0.2, 1);
@@ -56,7 +42,12 @@
       background: var(--bg);
       color: var(--fg);
       font-family: var(--sans);
-      transition: background 0.4s var(--ease), color 0.4s var(--ease);
+      transition: background-color 0.4s var(--ease), color 0.4s var(--ease);
+    }
+
+    /* Make sure all components smoothly transition their backgrounds and borders */
+    * {
+      transition: background-color 0.4s var(--ease), border-color 0.4s var(--ease), color 0.4s var(--ease), box-shadow 0.4s var(--ease);
     }
 
     /* ════════════════════════════════════════════════════════════════
@@ -1155,6 +1146,22 @@
         </div>
         <div class="bm-score">Compute Score: <span id="native-score">--</span></div>
       </div>
+      <div class="benchmark-col" id="col-scipy">
+        <h3>Numeric Engine (SciPy)</h3>
+        <div class="bm-stage-wrapper" id="scipy-stage1-wrap">
+          <div class="bm-stage" id="scipy-stage1">Stage 1: Cold Start <span>--</span></div>
+          <div class="progress-bar" id="scipy-stage1-pb"><div class="progress-fill"></div></div>
+        </div>
+        <div class="bm-stage-wrapper" id="scipy-stage2-wrap">
+          <div class="bm-stage" id="scipy-stage2">Stage 2: Throughput (100 Ops) <span>--</span></div>
+          <div class="progress-bar" id="scipy-stage2-pb"><div class="progress-fill"></div></div>
+        </div>
+        <div class="bm-stage-wrapper" id="scipy-stage3-wrap">
+          <div class="bm-stage" id="scipy-stage3">Stage 3: CPU Stress <span>--</span></div>
+          <div class="progress-bar" id="scipy-stage3-pb"><div class="progress-fill"></div></div>
+        </div>
+        <div class="bm-score">Compute Score: <span id="scipy-score">--</span></div>
+      </div>
     </div>
     
     <div class="bench-actions">
@@ -1363,6 +1370,20 @@ let _cmdCurrentMenu = 'root';
 
 let _cmdOriginalTheme = null;
 
+let _dynamicThemes = [];
+fetch('themes.css')
+  .then(res => res.text())
+  .then(css => {
+    const regex = /\[data-theme="([^"]+)"\]/g;
+    let match;
+    while ((match = regex.exec(css)) !== null) {
+      const themeName = match[1];
+      const label = 'Theme: ' + themeName.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      const keywords = themeName.replace('-', ' ') + ' theme color';
+      _dynamicThemes.push({ type: 'cmd', label, keywords });
+    }
+  })
+  .catch(err => console.warn('Could not load themes.css dynamically:', err));
 function _previewTheme(themeName) {
   document.documentElement.setAttribute('data-theme', themeName);
 }
@@ -1496,7 +1517,7 @@ function _runBenchmark(mode = 'standard') {
     'Stage 1: Cold Start', `Stage 2: Throughput (${loops2} Ops)`, 'Stage 3: CPU Stress'
   ];
 
-  ['wasm', 'native'].forEach(engine => {
+  ['wasm', 'native', 'scipy'].forEach(engine => {
     const s1 = document.getElementById(`${engine}-stage1`);
     if (s1 && s1.childNodes[0]) s1.childNodes[0].nodeValue = stageTitles[0] + " ";
     const s2 = document.getElementById(`${engine}-stage2`);
@@ -1505,7 +1526,7 @@ function _runBenchmark(mode = 'standard') {
     if (s3 && s3.childNodes[0]) s3.childNodes[0].nodeValue = stageTitles[2] + " ";
   });
 
-  const ids = ['wasm-stage1', 'wasm-stage2', 'wasm-stage3', 'native-stage1', 'native-stage2', 'native-stage3'];
+  const ids = ['wasm-stage1', 'wasm-stage2', 'wasm-stage3', 'native-stage1', 'native-stage2', 'native-stage3', 'scipy-stage1', 'scipy-stage2', 'scipy-stage3'];
   ids.forEach(id => {
     const s = document.querySelector(`#${id} span`);
     if (s) { s.textContent = '--'; s.style.color = ''; s.classList.remove('done'); }
@@ -1515,8 +1536,10 @@ function _runBenchmark(mode = 'standard') {
   
   document.getElementById('wasm-score').textContent = '--';
   document.getElementById('native-score').textContent = '--';
+  document.getElementById('scipy-score').textContent = '--';
   document.getElementById('wasm-score').classList.remove('winner', 'loser');
   document.getElementById('native-score').classList.remove('winner', 'loser');
+  document.getElementById('scipy-score').classList.remove('winner', 'loser');
 
   document.body.classList.add('computing-wasm-card');
 
@@ -1524,51 +1547,75 @@ function _runBenchmark(mode = 'standard') {
     document.body.classList.remove('computing-wasm-card');
     document.getElementById('wasm-score').textContent = wasmScore > 0 ? wasmScore.toLocaleString() : 'Error';
     
-    if (!juliaEngineConnected) {
-      document.getElementById('native-score').textContent = 'Offline';
-      if (stdBtn) stdBtn.disabled = false;
-      if (extBtn) extBtn.disabled = false;
-      return;
-    }
-
+    // Cooldown 1
     const cdDiv = document.getElementById('benchmark-cooldown');
     cdDiv.style.display = 'block';
-    let cd = 5;
-    cdDiv.textContent = `Cooldown... ${cd}s`;
+    let cd1 = 3;
+    cdDiv.textContent = `Cooldown... ${cd1}s`;
     
-    const cdInterval = setInterval(() => {
-      cd--;
-      cdDiv.textContent = `Cooldown... ${cd}s`;
-      if (cd <= 0) {
-        clearInterval(cdInterval);
+    const cd1Interval = setInterval(() => {
+      cd1--;
+      cdDiv.textContent = `Cooldown... ${cd1}s`;
+      if (cd1 <= 0) {
+        clearInterval(cd1Interval);
         cdDiv.style.display = 'none';
         
-        document.body.classList.add('computing-julia-card');
-        _runBenchmarkNative(mode).then(nativeScore => {
-          document.body.classList.remove('computing-julia-card');
-          document.getElementById('native-score').textContent = nativeScore > 0 ? nativeScore.toLocaleString() : 'Error';
-          if (stdBtn) stdBtn.disabled = false;
-          if (extBtn) extBtn.disabled = false;
+        document.body.classList.add('computing-scipy-card');
+        _runBenchmarkScipy(mode).then(scipyScore => {
+          document.body.classList.remove('computing-scipy-card');
+          document.getElementById('scipy-score').textContent = scipyScore > 0 ? scipyScore.toLocaleString() : 'Error';
 
-          // Compare scores and apply glow
-          if (wasmScore > 0 && nativeScore > 0) {
-             const wasmSpan = document.getElementById('wasm-score');
-             const nativeSpan = document.getElementById('native-score');
-             if (wasmScore > nativeScore) {
-               wasmSpan.classList.add('winner');
-               nativeSpan.classList.add('loser');
-             } else if (nativeScore > wasmScore) {
-               nativeSpan.classList.add('winner');
-               wasmSpan.classList.add('loser');
-             }
+          if (!juliaEngineConnected) {
+            document.getElementById('native-score').textContent = 'Offline';
+            if (stdBtn) stdBtn.disabled = false;
+            if (extBtn) extBtn.disabled = false;
+            _compare3Scores(wasmScore, scipyScore, -1);
+            return;
           }
+
+          // Cooldown 2
+          cdDiv.style.display = 'block';
+          let cd2 = 5;
+          cdDiv.textContent = `Cooldown... ${cd2}s`;
+          
+          const cd2Interval = setInterval(() => {
+            cd2--;
+            cdDiv.textContent = `Cooldown... ${cd2}s`;
+            if (cd2 <= 0) {
+              clearInterval(cd2Interval);
+              cdDiv.style.display = 'none';
+              
+              document.body.classList.add('computing-julia-card');
+              _runBenchmarkNative(mode).then(nativeScore => {
+                document.body.classList.remove('computing-julia-card');
+                document.getElementById('native-score').textContent = nativeScore > 0 ? nativeScore.toLocaleString() : 'Error';
+                if (stdBtn) stdBtn.disabled = false;
+                if (extBtn) extBtn.disabled = false;
+      
+                _compare3Scores(wasmScore, scipyScore, nativeScore);
+              });
+            }
+          }, 1000);
         });
       }
     }, 1000);
   });
 }
 
-async function _benchmarkWasmEval(latexStr, timeoutMs = 15000) {
+function _compare3Scores(wScore, sScore, nScore) {
+  const scores = [];
+  if (wScore > 0) scores.push({ id: 'wasm-score', val: wScore });
+  if (sScore > 0) scores.push({ id: 'scipy-score', val: sScore });
+  if (nScore > 0) scores.push({ id: 'native-score', val: nScore });
+  
+  if (scores.length > 1) {
+    scores.sort((a,b) => b.val - a.val);
+    document.getElementById(scores[0].id).classList.add('winner');
+    document.getElementById(scores[scores.length-1].id).classList.add('loser');
+  }
+}
+
+async function _benchmarkWasmEval(latexStr, timeoutMs = 15000, settings = {}) {
   return new Promise((resolve, reject) => {
     const targetWorker = workers[0].worker;
     
@@ -1596,8 +1643,62 @@ async function _benchmarkWasmEval(latexStr, timeoutMs = 15000) {
       reject(new Error("Timeout"));
     }, timeoutMs);
     
-    targetWorker.postMessage({ id: 'benchmark', blockId: 'benchmark', latexInput: latexStr });
+    targetWorker.postMessage({ id: 'benchmark', blockId: 'benchmark', latexInput: latexStr, settings });
   });
+}
+
+async function _runBenchmarkScipy(mode = 'standard') {
+  let totalTime = 0;
+  const p1 = '\\int_{0}^{1} e^{-x^2} dx'; // Brutal definite integral for SciPy quad
+  const p2 = mode === 'extreme' ? '\\lim_{x \\to 0} \\frac{\\sin(x) - x + \\frac{x^3}{6}}{x^5}' : 'x^2 - 5x + 6 = 0';
+  const p3 = mode === 'extreme' ? '\\int \\sin(\\cos(\\sin(x))) dx' : '\\frac{d^2}{dx^2} \\left[ \\sin(x^3) \\cdot e^{\\cos(x)} \\cdot \\ln(x^2 + 1) \\right]';
+  const loops2 = mode === 'extreme' ? 50 : 100;
+  
+  // Set numeric mode for this run
+  const testSettings = { numericMode: true };
+
+  // Stage 1
+  _setStageStatus('scipy', 1, 'computing');
+  let t0 = performance.now();
+  try {
+    await _benchmarkWasmEval(p1, 20000, testSettings);
+    let ms = performance.now() - t0;
+    totalTime += ms;
+    _setStageStatus('scipy', 1, 'done', ms);
+  } catch(e) {
+    _setStageStatus('scipy', 1, 'error', 0, e.message);
+    return 0;
+  }
+
+  // Stage 2
+  _setStageStatus('scipy', 2, 'computing');
+  t0 = performance.now();
+  try {
+    for (let i=0; i<loops2; i++) {
+      await _benchmarkWasmEval(p2, 20000, testSettings);
+    }
+    let ms = performance.now() - t0;
+    totalTime += ms;
+    _setStageStatus('scipy', 2, 'done', ms);
+  } catch(e) {
+    _setStageStatus('scipy', 2, 'error', 0, e.message);
+    return 0;
+  }
+
+  // Stage 3
+  _setStageStatus('scipy', 3, 'computing');
+  t0 = performance.now();
+  try {
+    await _benchmarkWasmEval(p3, 20000, testSettings);
+    let ms = performance.now() - t0;
+    totalTime += ms;
+    _setStageStatus('scipy', 3, 'done', ms);
+  } catch(e) {
+    _setStageStatus('scipy', 3, 'error', 0, e.message);
+    return 0;
+  }
+
+  return Math.max(1, Math.floor(10000000 / totalTime));
 }
 
 async function _runBenchmarkWasm(mode = 'standard') {
@@ -1793,14 +1894,7 @@ function _renderCmdResults() {
   } else if (_cmdCurrentMenu === 'themes') {
     cmdInput.placeholder = "Search themes...";
     _cmdItems.push({ type: 'back', label: '< Back to Main Menu', keywords: '' });
-    const themes = [
-      { type: 'cmd', label: 'Theme: Carbon', keywords: 'carbon dark minimal gray orange' },
-      { type: 'cmd', label: 'Theme: Nord', keywords: 'nord cool arctic blue slate' },
-      { type: 'cmd', label: 'Theme: Matrix', keywords: 'matrix hacker pure black green' },
-      { type: 'cmd', label: 'Theme: Dracula', keywords: 'dracula dark goth ink pink violet' },
-      { type: 'cmd', label: 'Theme: Botanical', keywords: 'botanical forest green cream nature' },
-      { type: 'cmd', label: 'Theme: Cyberpunk', keywords: 'cyberpunk neon pink violet cyan' }
-    ];
+    const themes = _dynamicThemes;
     themes.forEach(cmd => {
       const parsedTheme = cmd.label.replace('Theme: ', '').toLowerCase().replace(/\s+/g, '-');
       cmd.isActiveTheme = (parsedTheme === currentTheme);
@@ -1821,6 +1915,7 @@ function _renderCmdResults() {
       { type: 'cmd', label: `Settings: Tab Snippets`, toggleState: settings.tabSnippets, keywords: 'tab snippet completion latex setting' },
       { type: 'cmd', label: `Settings: Persistent Julia State`, toggleState: settings.persistentJulia, keywords: 'persistent julia state memory variables setting' },
       { type: 'cmd', label: `Settings: Engine: Auto-Pass to Julia`, toggleState: settings.autoJulia, keywords: 'engine auto pass julia solve setting' },
+      { type: 'cmd', label: `Settings: Engine: SciPy Numeric Mode (Experimental)`, toggleState: settings.numericMode, keywords: 'engine scipy numeric math integrate experimental setting' },
       { type: 'cmd', label: `Settings: Hover LaTeX Export`, toggleState: settings.hoverExport, keywords: 'hover export latex copy button clipboard setting' },
       { type: 'cmd', label: `Settings: Show Terminal Console`, toggleState: settings.showTerminal, keywords: 'terminal console telemetry debug log setting' }
     ];
@@ -1871,9 +1966,6 @@ function _renderCmdResults() {
     li.addEventListener('mouseenter', () => {
       _cmdSelectedIndex = index;
       _drawCmdSelection();
-      if (_cmdCurrentMenu === 'themes' && item.themeName) {
-        _previewTheme(item.themeName);
-      }
     });
 
     cmdResults.appendChild(li);
@@ -1884,17 +1976,39 @@ function _renderCmdResults() {
 
 function _drawCmdSelection() {
   const items = cmdResults.querySelectorAll('.cmd-item');
+  let hoveredTheme = null;
   items.forEach((el, idx) => {
     if (idx === _cmdSelectedIndex) {
       el.classList.add('selected');
-      el.scrollIntoView({ behavior: 'auto', block: 'nearest' });
-      if (_cmdCurrentMenu === 'themes' && _cmdItems[idx] && _cmdItems[idx].themeName) {
-        _previewTheme(_cmdItems[idx].themeName);
+      
+      // Manual scroll calculation to prevent page jumps
+      const container = cmdResults;
+      const elTop = el.offsetTop;
+      const elBottom = elTop + el.offsetHeight;
+      const containerTop = container.scrollTop;
+      const containerBottom = containerTop + container.offsetHeight;
+
+      if (elTop < containerTop) {
+        container.scrollTop = elTop;
+      } else if (elBottom > containerBottom) {
+        container.scrollTop = elBottom - container.offsetHeight;
+      }
+
+      if (_cmdCurrentMenu === 'themes' && _cmdItems[idx]) {
+        hoveredTheme = _cmdItems[idx].themeName;
       }
     } else {
       el.classList.remove('selected');
     }
   });
+
+  if (_cmdCurrentMenu === 'themes') {
+    if (hoveredTheme) {
+      _previewTheme(hoveredTheme);
+    } else if (_cmdOriginalTheme) {
+      _previewTheme(_cmdOriginalTheme);
+    }
+  }
 }
 
 function _executeCmd(item) {
@@ -1980,6 +2094,10 @@ function _executeCmd(item) {
     } else if (item.label.includes('Engine: Auto-Pass to Julia')) {
       settings.autoJulia = !settings.autoJulia;
       _lsSave(LS.AUTO_JULIA, settings.autoJulia);
+      _renderCmdResults();
+    } else if (item.label.includes('Engine: SciPy Numeric Mode')) {
+      settings.numericMode = !settings.numericMode;
+      _lsSave('numericMode', settings.numericMode);
       _renderCmdResults();
     } else if (item.label.includes('Hover LaTeX Export')) {
       settings.hoverExport = !settings.hoverExport;
@@ -2238,6 +2356,7 @@ function _dispatchToWorker(workerIndex, blockId, latex, seqId) {
       useDegrees:    settings.useDegrees, 
       precision:     settings.precision, 
       deepSimplify:  settings.deepSimplify,
+      numericMode:   settings.numericMode,
       context:       constants
     }
   });
@@ -2359,7 +2478,7 @@ function sendToWorker(blockId, latex) {
   const block = blocks.find(b => b.id === blockId);
   if (!block) return;
 
-  if (settings.autoJulia && juliaEngineConnected) {
+  if (settings.autoJulia && juliaEngineConnected && !settings.numericMode) {
     terminalLog(`[Auto-Julia] Routing directly to Julia API: ${latex.substring(0,20)}...`, 'info');
     _runViaJulia(blockId, latex);
     return;

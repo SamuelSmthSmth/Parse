@@ -31,8 +31,8 @@ async function init() {
   self.postMessage({ status: "progress", step: "Loading Pyodide engine..." });
   pyodide = await loadPyodide();
 
-  self.postMessage({ status: "progress", step: "Loading SymPy..." });
-  await pyodide.loadPackage(["sympy", "micropip"]);
+  self.postMessage({ status: "progress", step: "Loading SymPy & SciPy..." });
+  await pyodide.loadPackage(["sympy", "scipy", "micropip"]);
 
   self.postMessage({ status: "progress", step: "Fetching ANTLR4..." });
   const micropip = pyodide.pyimport("micropip");
