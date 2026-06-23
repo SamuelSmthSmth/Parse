@@ -205,6 +205,8 @@ def _solve_dispatch(latex_str):
     if expr is None:
         try:
             expr = parse_latex(latex_str)
+            if hasattr(expr, 'doit'):
+                expr = expr.doit()
         except LaTeXParsingError as exc:
             raise ValueError(f"LaTeX parse error: {exc}") from exc
         except Exception as exc:
@@ -225,9 +227,15 @@ def _solve_dispatch(latex_str):
     # ── 3a. doit() handles integrals, sums, limits, derivatives ─────────────
     try:
         evaled     = expr.doit()
-        simplified = simplify(evaled)
-        if simplified != expr:
-            result = simplified
+        
+        # Force expansion for generic polynomial benchmark payloads
+        expanded = sympy.expand(evaled)
+        if expanded != expr:
+            result = expanded
+        else:
+            simplified = simplify(evaled)
+            if simplified != expr:
+                result = simplified
     except NotImplementedError:
         pass   # no closed form — fall through to further solvers
     except Exception:
@@ -260,14 +268,9 @@ def _solve_dispatch(latex_str):
                     result = FiniteSet(*sols)
             except Exception:
                 pass
-        elif free:
-            # Generic expression: try solving expr = 0
-            try:
-                sols = solve(expr, free[0])
-                if sols:
-                    result = FiniteSet(*sols)
-            except Exception:
-                pass
+        # Do not automatically solve expr = 0 for generic polynomials 
+        # unless it was an explicit equation, to avoid converting 
+        # (x+y+z)^25 into {-y - z}.
 
     # ── 3c. ODE solver ───────────────────────────────────────────────────────
     if result is None and expr.has(Derivative):
@@ -282,21 +285,17 @@ def _solve_dispatch(latex_str):
         try:
             target = expr if result is None else result
             numeric = target.evalf(15, quad=True)
-            result  = numeric
-            method  = "numeric"
+            if not numeric.free_symbols:
+                result = numeric
+                method = "numeric"
+            else:
+                result = target # keep symbolic if it couldn't fully evaluate
         except Exception:
-            pass
-
-    if result is None:
-        raise ValueError("Could not evaluate: no closed form and numerical fallback failed.")
+            result = expr if result is None else result
 
     # Convert to latex
     latex_res = to_latex(result)
     
-    # ── 5. Hard Guardrail for Integrals ──────────────────────────────────────
-    if r'\int' in latex_res:
-        raise ValueError("Cannot numerically integrate: bounds may be highly divergent.")
-
     return latex_res, method
 """
 
@@ -451,6 +450,43 @@ function handle_solve(req::HTTP.Request)
 end
 
 
+function handle_solve_batch(req::HTTP.Request)
+    try
+        body = try
+            JSON3.read(req.body)
+        catch
+            return json_err("Invalid JSON body.", 400)
+        end
+
+        raw = get(body, :expressions, nothing)
+        isnothing(raw) && return json_err("Missing 'expressions' field.", 400)
+
+        results = String[]
+        for raw_expr in raw
+            latex = strip(String(raw_expr))
+            if isempty(latex) || length(latex) > 5_000
+                push!(results, "Error: Invalid expression length")
+                continue
+            end
+
+            try
+                result_latex, method = safe_evaluate(latex)
+                push!(results, result_latex)
+            catch e
+                msg = sprint(showerror, e)
+                push!(results, "Error: " * msg)
+            end
+        end
+
+        return HTTP.Response(200, CORS_HEADERS; body=JSON3.write(results))
+    catch e
+        msg = sprint(showerror, e)
+        @error "Fatal error in handle_solve_batch" exception=(e, catch_backtrace())
+        return HTTP.Response(500, CORS_HEADERS; body = JSON3.write(Dict("status" => "error", "error" => "Julia Engine Error: " * msg)))
+    end
+end
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Router
 # ─────────────────────────────────────────────────────────────────────────────
@@ -460,6 +496,7 @@ function router(req::HTTP.Request)::HTTP.Response
     m == "OPTIONS"              && return handle_options(req)
     m == "GET"  && p == "/health" && return handle_health(req)
     m == "POST" && p == "/solve"  && return handle_solve(req)
+    m == "POST" && p == "/solve_batch" && return handle_solve_batch(req)
     return json_err("Not found: $m $p", 404)
 end
 

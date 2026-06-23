@@ -617,6 +617,10 @@ def _evaluate_latex_impl(latex_input: str, settings_json: str = None) -> str:
         except Exception as exc:
             return _incomplete(f"Parse error: {_short(exc)}")
 
+    # Force aggressive evaluation of calculus/unevaluated operations
+    if hasattr(expr, 'doit'):
+        expr = expr.doit()
+
     # ── Step 1: inject mathematical constants ─────────────────────────────────
     # Replaces Symbol('pi'), Symbol('e'), Symbol('i') with the proper SymPy
     # constants so that all subsequent simplification works correctly.

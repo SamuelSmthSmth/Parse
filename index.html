@@ -903,12 +903,113 @@
       transition: all 0.2s var(--ease);
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
+    }
     #help-btn:hover {
       opacity: 1;
       transform: scale(1.05);
       border-color: var(--caret-col);
     }
 
+    /* ── Benchmark UI ── */
+    #benchmark-btn {
+      position: fixed; bottom: 3.5rem; right: 4.5rem; z-index: 500;
+      background: var(--panel-bg); border: 1px solid var(--panel-border);
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      color: var(--fg); font-family: var(--mono); font-size: 1.1rem;
+      width: 2.5rem; height: 2.5rem; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0.6; cursor: pointer; transition: all 0.2s var(--ease);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    #benchmark-btn:hover { opacity: 1; transform: scale(1.05); border-color: #f59e0b; }
+
+    #benchmark-overlay {
+      position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      opacity: 0; pointer-events: none; transition: opacity 0.3s var(--ease);
+    }
+    #benchmark-overlay.open { opacity: 1; pointer-events: auto; }
+    #benchmark-modal {
+      background: var(--bg); color: var(--fg); padding: 2.5rem;
+      width: 90%; max-width: 700px; border-radius: 16px; border: 1px solid var(--panel-border);
+      font-family: var(--sans); box-shadow: inset 0 0 40px rgba(255,255,255,0.02), 0 24px 60px rgba(0,0,0,0.6); position: relative;
+    }
+    .benchmark-grid { display: flex; gap: 2rem; margin-top: 1.5rem; }
+    .benchmark-col {
+      flex: 1;
+      background: var(--panel-bg);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: 1px solid var(--panel-border);
+      transform: translateY(20px);
+      opacity: 0;
+      transition: transform 0.4s var(--ease), opacity 0.4s var(--ease);
+    }
+    #benchmark-overlay.open .benchmark-col {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    #benchmark-overlay.open #col-wasm { transition-delay: 0.1s; }
+    #benchmark-overlay.open #col-native { transition-delay: 0.2s; }
+    .benchmark-col h3 { font-size: 0.85rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em; color: #888; margin: 0 0 1.5rem 0; }
+    .bm-stage-wrapper { margin-bottom: 0.8rem; }
+    .bm-stage { font-family: var(--mono); font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+    .bm-stage span { font-family: monospace; transition: text-shadow 0.3s; }
+    .bm-stage span.done { text-shadow: 0 0 8px rgba(255,255,255,0.5); }
+    .progress-bar { height: 2px; background: var(--divider); border-radius: 2px; overflow: hidden; width: 100%; position: relative; }
+    .progress-fill { height: 100%; width: 0%; background: var(--caret-col); transition: width 0.3s var(--ease); }
+    .progress-bar.active .progress-fill { width: 100%; animation: pulse-progress 1.5s infinite alternate; }
+    @keyframes pulse-progress {
+      0% { opacity: 0.6; }
+      100% { opacity: 1; }
+    }
+    body.computing-wasm-card #col-wasm {
+      box-shadow: 0 0 40px rgba(0, 112, 243, 0.15);
+    }
+    body.computing-julia-card #col-native {
+      box-shadow: 0 0 40px rgba(189, 147, 249, 0.15);
+    }
+    body.computing-wasm-card #col-native, body.computing-julia-card #col-wasm {
+      opacity: 0.5;
+    }
+    .bm-score { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--panel-border); font-family: var(--sans); font-weight: bold; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; }
+    .bm-score span { color: #4ade80; font-size: 1.3rem; transition: text-shadow 0.3s, opacity 0.3s; }
+    .bm-score span.winner { text-shadow: 0 0 15px #4ade80, 0 0 30px #4ade80; }
+    .bm-score span.loser { opacity: 0.6; }
+    #benchmark-close { position: absolute; top: 1rem; right: 1rem; background: transparent; border: none; color: var(--fg-dim); cursor: pointer; font-family: var(--mono); font-size: 1rem; }
+    #benchmark-close:hover { color: var(--fg); }
+
+    .bench-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    .bench-actions button {
+      flex: 1;
+      padding: 0.8rem;
+      border: none;
+      border-radius: 30px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: var(--sans);
+      transition: transform 0.2s, opacity 0.2s, box-shadow 0.2s;
+    }
+    .bench-actions button:hover { transform: scale(1.02); }
+    .bench-actions button:active { transform: scale(0.98); opacity: 0.8; }
+    .btn-secondary {
+      background: rgba(255,255,255,0.08);
+      color: var(--fg);
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.12); }
+    .btn-primary {
+      background: linear-gradient(135deg, #bd93f9, #8be9fd);
+      color: #000;
+      box-shadow: 0 4px 15px rgba(189, 147, 249, 0.3);
+    }
+    
     #help-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -1066,6 +1167,28 @@
       font-size: 0.8rem;
       opacity: 0.5;
     }
+    @keyframes breatheGradient {
+      0% { opacity: 0.6; }
+      50% { opacity: 1; }
+      100% { opacity: 0.6; }
+    }
+    
+    body.computing-julia #custom-caret {
+      background: linear-gradient(135deg, #bd93f9, #8be9fd);
+      box-shadow: 0 0 8px #bd93f9;
+    }
+    
+    body.computing-wasm #custom-caret {
+      background: #ffb86c;
+      box-shadow: 0 0 8px #ffb86c;
+    }
+    
+    body.computing-julia #julia-label, body.computing-julia #julia-dot {
+      background: linear-gradient(135deg, #bd93f9, #8be9fd);
+      -webkit-background-clip: text;
+      color: transparent;
+      animation: breatheGradient 2s ease-in-out infinite;
+    }
   </style>
 </head>
 <body>
@@ -1104,6 +1227,7 @@
 </div>
 
 <button id="help-btn" onclick="openHelp()" aria-label="Help">?</button>
+<button id="benchmark-btn" onclick="openBenchmark()" aria-label="Benchmark">⚡</button>
 
 <div id="help-overlay" onclick="closeHelp(event)">
   <div id="help-modal" onclick="event.stopPropagation()">
@@ -1138,6 +1262,56 @@
       <li><strong>Cmd + K:</strong> Open the Command Palette.</li>
       <li><strong>Constants:</strong> Define global variables (e.g., a = 5) in the left panel.</li>
     </ul>
+  </div>
+</div>
+
+<div id="benchmark-overlay" onclick="closeBenchmark(event)">
+  <div id="benchmark-modal" onclick="event.stopPropagation()">
+    <button id="benchmark-close" onclick="closeBenchmark(event)" aria-label="Close Benchmark">[x]</button>
+    <h2 style="margin-top:0; color:#f59e0b; font-weight:500;">Engine Benchmark</h2>
+    <p style="font-size:0.95rem;">Execute the 3-stage mathematical torture test.</p>
+    
+    <div id="benchmark-cooldown" style="display:none; text-align:center; color:var(--caret-col); font-weight:bold; margin-bottom: 1rem;">Cooldown...</div>
+
+    <div class="benchmark-grid">
+      <div class="benchmark-col" id="col-wasm">
+        <h3>Browser Engine (WASM)</h3>
+        <div class="bm-stage-wrapper" id="wasm-stage1-wrap">
+          <div class="bm-stage" id="wasm-stage1">Stage 1: Cold Start <span>--</span></div>
+          <div class="progress-bar" id="wasm-stage1-pb"><div class="progress-fill"></div></div>
+        </div>
+        <div class="bm-stage-wrapper" id="wasm-stage2-wrap">
+          <div class="bm-stage" id="wasm-stage2">Stage 2: Throughput (100 Ops) <span>--</span></div>
+          <div class="progress-bar" id="wasm-stage2-pb"><div class="progress-fill"></div></div>
+        </div>
+        <div class="bm-stage-wrapper" id="wasm-stage3-wrap">
+          <div class="bm-stage" id="wasm-stage3">Stage 3: CPU Stress <span>--</span></div>
+          <div class="progress-bar" id="wasm-stage3-pb"><div class="progress-fill"></div></div>
+        </div>
+        <div class="bm-score">Compute Score: <span id="wasm-score">--</span></div>
+      </div>
+      <div class="benchmark-col" id="col-native">
+        <h3>Desktop Engine (Native)</h3>
+        <div class="bm-stage-wrapper" id="native-stage1-wrap">
+          <div class="bm-stage" id="native-stage1">Stage 1: Cold Start <span>--</span></div>
+          <div class="progress-bar" id="native-stage1-pb"><div class="progress-fill"></div></div>
+        </div>
+        <div class="bm-stage-wrapper" id="native-stage2-wrap">
+          <div class="bm-stage" id="native-stage2">Stage 2: Throughput (100 Ops) <span>--</span></div>
+          <div class="progress-bar" id="native-stage2-pb"><div class="progress-fill"></div></div>
+        </div>
+        <div class="bm-stage-wrapper" id="native-stage3-wrap">
+          <div class="bm-stage" id="native-stage3">Stage 3: CPU Stress <span>--</span></div>
+          <div class="progress-bar" id="native-stage3-pb"><div class="progress-fill"></div></div>
+        </div>
+        <div class="bm-score">Compute Score: <span id="native-score">--</span></div>
+      </div>
+    </div>
+    
+    <div class="bench-actions">
+      <button class="btn-secondary" onclick="_runBenchmark('standard')" id="btn-bench-std">Run Standard</button>
+      <button class="btn-primary" onclick="_runBenchmark('extreme')" id="btn-bench-extreme">Run Extreme Stress</button>
+    </div>
   </div>
 </div>
 
@@ -1369,6 +1543,307 @@ function closeHelp(e) {
     _helpSavedFocus.focus();
     _helpSavedFocus = null;
   }
+}
+
+let _benchmarkSavedFocus = null;
+function openBenchmark() {
+  _benchmarkSavedFocus = document.activeElement;
+  document.getElementById('benchmark-overlay').classList.add('open');
+}
+function closeBenchmark(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('benchmark-overlay').classList.remove('open');
+  if (_benchmarkSavedFocus) {
+    _benchmarkSavedFocus.focus();
+    _benchmarkSavedFocus = null;
+  }
+}
+
+// ── Benchmark Logic ──
+let _benchmarkResolve = null;
+
+function _withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), ms))
+  ]);
+}
+
+function _setStageStatus(engine, stage, status, ms = 0, errMsg = '') {
+  const span = document.querySelector(`#${engine}-stage${stage} span`);
+  const pb = document.getElementById(`${engine}-stage${stage}-pb`);
+  if (!span) return;
+  if (status === 'computing') {
+    span.textContent = 'Computing...';
+    span.style.color = '';
+    span.classList.remove('done');
+    if (pb) pb.classList.add('active');
+  } else if (status === 'done') {
+    span.textContent = `${ms.toFixed(1)}ms`;
+    span.classList.add('done');
+    if (pb) pb.classList.remove('active');
+  } else if (status === 'error') {
+    span.textContent = `Fail: ${errMsg}`;
+    span.style.color = 'var(--err)';
+    if (pb) pb.classList.remove('active');
+  }
+}
+
+function _runBenchmark(mode = 'standard') {
+  const stdBtn = document.getElementById('btn-bench-std');
+  const extBtn = document.getElementById('btn-bench-extreme');
+  if (stdBtn) stdBtn.disabled = true;
+  if (extBtn) extBtn.disabled = true;
+  
+  const loops2 = mode === 'extreme' ? 50 : 100;
+  const stageTitles = mode === 'extreme' ? [
+    'Stage 1: Deep Expansion', `Stage 2: Limits (${loops2} Ops)`, 'Stage 3: Nested Chaos'
+  ] : [
+    'Stage 1: Cold Start', `Stage 2: Throughput (${loops2} Ops)`, 'Stage 3: CPU Stress'
+  ];
+
+  ['wasm', 'native'].forEach(engine => {
+    const s1 = document.getElementById(`${engine}-stage1`);
+    if (s1 && s1.childNodes[0]) s1.childNodes[0].nodeValue = stageTitles[0] + " ";
+    const s2 = document.getElementById(`${engine}-stage2`);
+    if (s2 && s2.childNodes[0]) s2.childNodes[0].nodeValue = stageTitles[1] + " ";
+    const s3 = document.getElementById(`${engine}-stage3`);
+    if (s3 && s3.childNodes[0]) s3.childNodes[0].nodeValue = stageTitles[2] + " ";
+  });
+
+  const ids = ['wasm-stage1', 'wasm-stage2', 'wasm-stage3', 'native-stage1', 'native-stage2', 'native-stage3'];
+  ids.forEach(id => {
+    const s = document.querySelector(`#${id} span`);
+    if (s) { s.textContent = '--'; s.style.color = ''; s.classList.remove('done'); }
+    const pb = document.getElementById(`${id}-pb`);
+    if (pb) pb.classList.remove('active');
+  });
+  
+  document.getElementById('wasm-score').textContent = '--';
+  document.getElementById('native-score').textContent = '--';
+  document.getElementById('wasm-score').classList.remove('winner', 'loser');
+  document.getElementById('native-score').classList.remove('winner', 'loser');
+
+  document.body.classList.add('computing-wasm-card');
+
+  _runBenchmarkWasm(mode).then(wasmScore => {
+    document.body.classList.remove('computing-wasm-card');
+    document.getElementById('wasm-score').textContent = wasmScore > 0 ? wasmScore.toLocaleString() : 'Error';
+    
+    if (!juliaEngineConnected) {
+      document.getElementById('native-score').textContent = 'Offline';
+      if (stdBtn) stdBtn.disabled = false;
+      if (extBtn) extBtn.disabled = false;
+      return;
+    }
+
+    const cdDiv = document.getElementById('benchmark-cooldown');
+    cdDiv.style.display = 'block';
+    let cd = 5;
+    cdDiv.textContent = `Cooldown... ${cd}s`;
+    
+    const cdInterval = setInterval(() => {
+      cd--;
+      cdDiv.textContent = `Cooldown... ${cd}s`;
+      if (cd <= 0) {
+        clearInterval(cdInterval);
+        cdDiv.style.display = 'none';
+        
+        document.body.classList.add('computing-julia-card');
+        _runBenchmarkNative(mode).then(nativeScore => {
+          document.body.classList.remove('computing-julia-card');
+          document.getElementById('native-score').textContent = nativeScore > 0 ? nativeScore.toLocaleString() : 'Error';
+          if (stdBtn) stdBtn.disabled = false;
+          if (extBtn) extBtn.disabled = false;
+
+          // Compare scores and apply glow
+          if (wasmScore > 0 && nativeScore > 0) {
+             const wasmSpan = document.getElementById('wasm-score');
+             const nativeSpan = document.getElementById('native-score');
+             if (wasmScore > nativeScore) {
+               wasmSpan.classList.add('winner');
+               nativeSpan.classList.add('loser');
+             } else if (nativeScore > wasmScore) {
+               nativeSpan.classList.add('winner');
+               wasmSpan.classList.add('loser');
+             }
+          }
+        });
+      }
+    }, 1000);
+  });
+}
+
+async function _benchmarkWasmEval(latexStr, timeoutMs = 15000) {
+  return new Promise((resolve, reject) => {
+    const targetWorker = workers[0].worker;
+    
+    const tempListener = (e) => {
+      const data = e.data;
+      if (data && (data.id === 'benchmark' || data.blockId === 'benchmark')) {
+        // Ignore intermediate progress messages
+        if (data.status === 'progress') return;
+        
+        targetWorker.removeEventListener('message', tempListener);
+        clearTimeout(safetyTimeout);
+        
+        if (data.status === 'error') {
+          reject(new Error(data.error || 'Worker execution failed'));
+        } else {
+          resolve(data);
+        }
+      }
+    };
+    
+    targetWorker.addEventListener('message', tempListener);
+    
+    const safetyTimeout = setTimeout(() => {
+      targetWorker.removeEventListener('message', tempListener);
+      reject(new Error("Timeout"));
+    }, timeoutMs);
+    
+    targetWorker.postMessage({ id: 'benchmark', blockId: 'benchmark', latexInput: latexStr });
+  });
+}
+
+async function _runBenchmarkWasm(mode = 'standard') {
+  let totalTime = 0;
+  const p1 = mode === 'extreme' ? '(x + y + z)^{25}' : '\\int \\frac{x^4}{\\sqrt{1 - x^2}} \\, dx';
+  const p2 = mode === 'extreme' ? '\\lim_{x \\to 0} \\frac{\\sin(x) - x + \\frac{x^3}{6}}{x^5}' : 'x^2 - 5x + 6 = 0';
+  const p3 = mode === 'extreme' ? '\\int \\sin(\\cos(\\sin(x))) dx' : '\\frac{d^2}{dx^2} \\left[ \\sin(x^3) \\cdot e^{\\cos(x)} \\cdot \\ln(x^2 + 1) \\right]';
+  const loops2 = mode === 'extreme' ? 50 : 100;
+  
+  // Stage 1
+  _setStageStatus('wasm', 1, 'computing');
+  let t0 = performance.now();
+  try {
+    await _benchmarkWasmEval(p1, 20000);
+    let ms = performance.now() - t0;
+    totalTime += ms;
+    _setStageStatus('wasm', 1, 'done', ms);
+  } catch(e) {
+    _setStageStatus('wasm', 1, 'error', 0, e.message);
+    return 0; // abort
+  }
+
+  // Stage 2
+  _setStageStatus('wasm', 2, 'computing');
+  t0 = performance.now();
+  try {
+    for (let i=0; i<loops2; i++) {
+      await _benchmarkWasmEval(p2, 20000);
+    }
+    let ms = performance.now() - t0;
+    totalTime += ms;
+    _setStageStatus('wasm', 2, 'done', ms);
+  } catch(e) {
+    _setStageStatus('wasm', 2, 'error', 0, e.message);
+    return 0;
+  }
+
+  // Stage 3
+  _setStageStatus('wasm', 3, 'computing');
+  t0 = performance.now();
+  try {
+    await _benchmarkWasmEval(p3, 20000);
+    let ms = performance.now() - t0;
+    totalTime += ms;
+    _setStageStatus('wasm', 3, 'done', ms);
+  } catch(e) {
+    _setStageStatus('wasm', 3, 'error', 0, e.message);
+    return 0;
+  }
+
+  return Math.round(100000 / (totalTime / 1000));
+}
+
+async function _benchmarkNativeEval(latex) {
+  const res = await fetch('http://127.0.0.1:8001/solve', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ expression: latex })
+  });
+  if (!res.ok) {
+    throw new Error(`HTTP Error: ${res.status}`);
+  }
+  const data = await res.json();
+  if (data.error) {
+    throw new Error(data.error);
+  }
+  return data;
+}
+
+async function _benchmarkNativeEvalBatch(latexArray) {
+  const res = await fetch('http://127.0.0.1:8001/solve_batch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ expressions: latexArray })
+  });
+  if (!res.ok) {
+    throw new Error(`HTTP Error: ${res.status}`);
+  }
+  const data = await res.json();
+  return data;
+}
+
+async function _runJuliaWarmup() {
+  try {
+    await _withTimeout(_benchmarkNativeEval('1+1'), 15000);
+  } catch (e) {
+    // Ignore warmup errors
+  }
+}
+
+async function _runBenchmarkNative(mode = 'standard') {
+  let totalTime = 0;
+  const p1 = mode === 'extreme' ? '(x + y + z)^{25}' : '\\int \\frac{x^4}{\\sqrt{1 - x^2}} \\, dx';
+  const p2 = mode === 'extreme' ? '\\lim_{x \\to 0} \\frac{\\sin(x) - x + \\frac{x^3}{6}}{x^5}' : 'x^2 - 5x + 6 = 0';
+  const p3 = mode === 'extreme' ? '\\int \\sin(\\cos(\\sin(x))) dx' : '\\frac{d^2}{dx^2} \\left[ \\sin(x^3) \\cdot e^{\\cos(x)} \\cdot \\ln(x^2 + 1) \\right]';
+  const loops2 = mode === 'extreme' ? 50 : 100;
+
+  await _runJuliaWarmup();
+
+  // Stage 1
+  _setStageStatus('native', 1, 'computing');
+  let t0 = performance.now();
+  try {
+    await _withTimeout(_benchmarkNativeEval(p1), 20000);
+    let ms = performance.now() - t0;
+    totalTime += ms;
+    _setStageStatus('native', 1, 'done', ms);
+  } catch(e) {
+    _setStageStatus('native', 1, 'error', 0, e.message);
+    return 0;
+  }
+
+  // Stage 2
+  _setStageStatus('native', 2, 'computing');
+  t0 = performance.now();
+  try {
+    const expressions = Array(loops2).fill(p2);
+    await _withTimeout(_benchmarkNativeEvalBatch(expressions), 20000);
+    let ms = performance.now() - t0;
+    totalTime += ms;
+    _setStageStatus('native', 2, 'done', ms);
+  } catch(e) {
+    _setStageStatus('native', 2, 'error', 0, e.message);
+    return 0;
+  }
+
+  // Stage 3
+  _setStageStatus('native', 3, 'computing');
+  t0 = performance.now();
+  try {
+    await _withTimeout(_benchmarkNativeEval(p3), 20000);
+    let ms = performance.now() - t0;
+    totalTime += ms;
+    _setStageStatus('native', 3, 'done', ms);
+  } catch(e) {
+    _setStageStatus('native', 3, 'error', 0, e.message);
+    return 0;
+  }
+
+  return Math.round(100000 / (totalTime / 1000));
 }
 
 cmdOverlay.addEventListener('mousedown', (e) => {
@@ -1664,6 +2139,9 @@ function _createWorker(i) {
     }
 
     workers[i].idle = true;
+    if (workers.every(w => w.idle)) {
+      document.body.classList.remove('computing-wasm');
+    }
 
     const block = blocks.find(b => b.id === data.blockId);
     if (block) {
@@ -1696,6 +2174,9 @@ function _createWorker(i) {
   w.onerror = (e) => {
     console.error(`[worker ${i}] Uncaught error:`, e);
     workers[i].idle = true;
+    if (workers.every(w => w.idle)) {
+      document.body.classList.remove('computing-wasm');
+    }
     setWorkerStatus('error');
     
     // Clear any block associated with this worker
@@ -1776,6 +2257,7 @@ function _dispatchToWorker(workerIndex, blockId, latex, seqId) {
   const constants = getGlobalConstants();
   console.log("Payload Constants:", constants);
 
+  document.body.classList.add('computing-wasm');
   workerObj.worker.postMessage({
     id: seqId,
     blockId: blockId,
@@ -2268,6 +2750,10 @@ async function _runViaJulia(blockId, latex, workerIndex) {
   if (workerIndex !== undefined && workers[workerIndex]) {
     console.log(`[Julia] Terminating worker ${workerIndex} — handing off to Julia`);
     workers[workerIndex].worker.terminate();
+    workers[workerIndex].idle = true;
+    if (workers.every(w => w.idle)) {
+      document.body.classList.remove('computing-wasm');
+    }
     readyCount = Math.max(0, readyCount - 1);
     _createWorker(workerIndex);
   }
@@ -2277,6 +2763,8 @@ async function _runViaJulia(blockId, latex, workerIndex) {
   if (katexOut) {
     katexOut.innerHTML = '<span class="computing-hint">Julia Engine: Computing…</span>';
   }
+
+  document.body.classList.add('computing-julia');
 
   try {
     const resp = await fetch(JULIA_URL, {
@@ -2339,6 +2827,8 @@ async function _runViaJulia(blockId, latex, workerIndex) {
     }
     const prompt = document.getElementById(`julia-prompt-${blockId}`);
     if (prompt) prompt.remove();
+  } finally {
+    document.body.classList.remove('computing-julia');
   }
 }
 
