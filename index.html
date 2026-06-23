@@ -6,6 +6,19 @@
   <link rel="manifest" href="manifest.json">
   <title>Parse | A Weird LaTeX CAS</title>
   <meta name="description" content="A live LaTeX calculator powered by Pyodide and SymPy. Type math, see results instantly." />
+  <script>
+    (function() {
+      try {
+        const val = localStorage.getItem('latexcalc_theme');
+        if (val) {
+          let theme = JSON.parse(val);
+          if (theme === true) theme = 'dark';
+          if (theme === false) theme = 'light';
+          document.documentElement.setAttribute('data-theme', theme);
+        }
+      } catch(e) {}
+    })();
+  </script>
 
   <!-- KaTeX -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
@@ -1024,24 +1037,50 @@
       color: var(--caret-col);
       font-weight: 500;
     }
-    #help-modal h3 {
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--fg-dim);
-      margin-top: 1.5rem;
-      margin-bottom: 0.5rem;
-    }
-    #help-modal p, #help-modal ul {
+    #help-modal p {
       font-size: 0.95rem;
       line-height: 1.5;
     }
-    #help-modal ul {
-      padding-left: 1.2rem;
-      margin: 0;
+    .help-grid {
+      display: grid;
+      gap: 1rem;
+      margin-top: 1rem;
     }
-    #help-modal li {
-      margin-bottom: 0.4rem;
+    .help-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 1rem;
+      transition: background 0.2s;
+    }
+    .help-card:hover {
+      background: rgba(255,255,255,0.06);
+    }
+    .help-card h4 {
+      margin: 0 0 0.5rem 0;
+      color: var(--fg);
+      font-weight: 600;
+    }
+    .help-card p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--fg-dim);
+    }
+    .help-footer {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--panel-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: var(--fg-dim);
+    }
+    .help-footer label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
     }
     #help-close {
       position: absolute;
@@ -1315,36 +1354,55 @@
 <div id="help-overlay" onclick="closeHelp(event)">
   <div id="help-modal" onclick="event.stopPropagation()">
     <button id="help-close" onclick="closeHelp(event)" aria-label="Close Help">[x]</button>
-    <h2>LaTeX Calc Architecture</h2>
-    <p>A multi-threaded, realtime LaTeX Computer Algebra System powered by a dual-engine architecture.</p>
+    <h2>Parse Onboarding</h2>
+    <p>Welcome to Parse! A multi-threaded, realtime LaTeX Computer Algebra System powered by a dual-engine architecture.</p>
     
-    <h3>1. Browser Engine</h3>
-    <p>Runs standard calculus and algebra directly in your browser using Pyodide and SymPy. It is fast, lightweight, and requires no installation.</p>
-
-    <h3>2. Desktop Engine (Optional)</h3>
-    <p>For massive matrix determinants, differential equations, and heavy numerical root finding, connect our native Julia companion app for unlimited compute power.</p>
-
-    <h3>How to install the Desktop Engine</h3>
-    <div style="margin: 1.5rem 0;">
-      <a href="/julia-desktop-engine.zip" download class="julia-btn julia-btn-primary" style="text-decoration: none; display: inline-block; text-align: center;">Download Desktop Engine Package (.zip)</a>
+    <h3 style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--fg-dim); margin-top: 1.5rem; margin-bottom: 0.5rem;">1. The Compute Engines</h3>
+    <div class="help-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+      <div class="help-card">
+        <h4>SymPy (WASM)</h4>
+        <p>The default local browser engine. Best for exact symbolic math, indefinite integrals, and algebra.</p>
+      </div>
+      <div class="help-card">
+        <h4>Julia (Native)</h4>
+        <p>The high-speed desktop engine. Best for deep iterations and stateful variable memory.</p>
+      </div>
+      <div class="help-card">
+        <h4>SciPy (Numeric)</h4>
+        <p>The experimental C-compiled engine. Best for approximating unsolvable definite integrals.</p>
+      </div>
     </div>
-    <ul>
-      <li><strong>Step 1:</strong> Install Julia from <a href="https://julialang.org/downloads/" target="_blank" style="color:var(--caret-col);text-decoration:none;">julialang.org</a></li>
-      <li><strong>Step 2:</strong> Extract the downloaded <code>julia-desktop-engine.zip</code> file.</li>
-      <li><strong>Step 3:</strong> Launch the engine:
-        <ul style="margin-top: 0.5rem;">
-          <li><strong>Windows:</strong> Double-click <code>launcher.bat</code></li>
-          <li><strong>Mac/Linux:</strong> Open terminal, run <code>chmod +x launcher.sh</code>, then <code>./launcher.sh</code></li>
-        </ul>
-      </li>
-    </ul>
 
-    <h3>Keyboard Shortcuts & Tips</h3>
-    <ul>
-      <li><strong>Shift + Enter:</strong> Spawn a new calculation block.</li>
-      <li><strong>Cmd + K:</strong> Open the Command Palette.</li>
-      <li><strong>Constants:</strong> Define global variables (e.g., a = 5) in the left panel.</li>
-    </ul>
+    <h3 style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--fg-dim); margin-top: 1.5rem; margin-bottom: 0.5rem;">2. Editor Superpowers</h3>
+    <div class="help-grid" style="grid-template-columns: 1fr 1fr;">
+      <div class="help-card">
+        <h4>Tab Completion</h4>
+        <p>Type <code>\int</code> and press <b>Tab</b> to generate structural bounds automatically.</p>
+      </div>
+      <div class="help-card">
+        <h4>Auto-Brackets</h4>
+        <p>Typing <code>(</code> or <code>[</code> will automatically close the pair and put your cursor inside.</p>
+      </div>
+    </div>
+
+    <h3 style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--fg-dim); margin-top: 1.5rem; margin-bottom: 0.5rem;">3. Diagnostics & Hotkeys</h3>
+    <div class="help-grid" style="grid-template-columns: 1fr 1fr;">
+      <div class="help-card">
+        <h4>Command Palette</h4>
+        <p>Press <b>Ctrl+K</b> or <b>Cmd+K</b> to access themes, engine toggles, and settings.</p>
+      </div>
+      <div class="help-card">
+        <h4>Hacker Console</h4>
+        <p>Press the backtick key <b>`</b> to view real-time system telemetry and asynchronous step-by-step math breakdowns.</p>
+      </div>
+    </div>
+
+    <div class="help-footer">
+      <label>
+        <input type="checkbox" id="help-opt-out"> Don't show this automatically again
+      </label>
+      <a href="/julia-desktop-engine.zip" download style="color:var(--caret-col); text-decoration:none;">Download Julia Desktop Engine</a>
+    </div>
   </div>
 </div>
 
@@ -3805,13 +3863,13 @@ document.getElementById('app').addEventListener('scroll', () => {
     // Read the theme accent color from CSS variables at runtime
     const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--caret-col').trim() || '#8b78ff';
 
-    const PARTICLE_COUNT = 60;
+    const PARTICLE_COUNT = 100;
     const particles = Array.from({ length: PARTICLE_COUNT }, () => ({
       x: Math.random() * W,
       y: Math.random() * H,
-      vx: (Math.random() - 0.5) * 0.3,
-      vy: (Math.random() - 0.5) * 0.3,
-      r: Math.random() * 4.0 + 2.0, // Much larger particles
+      vx: (Math.random() - 0.5) * 0.2,
+      vy: (Math.random() - 0.5) * 0.2,
+      r: Math.random() * 1.5 + 0.5,
       alpha: Math.random() * 0.35 + 0.15,
     }));
 
@@ -3824,7 +3882,7 @@ document.getElementById('app').addEventListener('scroll', () => {
           const dx = particles[i].x - particles[j].x;
           const dy = particles[i].y - particles[j].y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 120) { // Occasional lines when they get reasonably close
+          if (dist < 100) { // More frequent connections
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
