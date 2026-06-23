@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -1025,7 +1025,7 @@
       color: var(--fg);
       padding: 2.5rem;
       width: 90%;
-      max-width: 600px;
+      max-width: 1000px;
       border-radius: 16px;
       border: 1px solid var(--panel-border);
       font-family: var(--sans);
@@ -1357,43 +1357,100 @@
     <h2>Parse Onboarding</h2>
     <p>Welcome to Parse! A multi-threaded, realtime LaTeX Computer Algebra System powered by a dual-engine architecture.</p>
     
-    <h3 style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--fg-dim); margin-top: 1.5rem; margin-bottom: 0.5rem;">1. The Compute Engines</h3>
-    <div class="help-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
-      <div class="help-card">
-        <h4>SymPy (WASM)</h4>
-        <p>The default local browser engine. Best for exact symbolic math, indefinite integrals, and algebra.</p>
-      </div>
-      <div class="help-card">
-        <h4>Julia (Native)</h4>
-        <p>The high-speed desktop engine. Best for deep iterations and stateful variable memory.</p>
-      </div>
-      <div class="help-card">
-        <h4>SciPy (Numeric)</h4>
-        <p>The experimental C-compiled engine. Best for approximating unsolvable definite integrals.</p>
-      </div>
-    </div>
+    <div style="display: flex; gap: 3rem; margin-top: 2rem;">
+      <div style="flex: 3;">
+        <h3 style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--fg-dim); margin-top: 0; margin-bottom: 0.5rem;">1. The Compute Engines</h3>
+        <div class="help-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+          <div class="help-card">
+            <h4>SymPy (WASM)</h4>
+            <p>The default local browser engine. Best for exact symbolic math, indefinite integrals, and algebra.</p>
+          </div>
+          <div class="help-card">
+            <h4>Julia (Native)</h4>
+            <p>The high-speed desktop engine. Best for deep iterations and stateful variable memory.</p>
+          </div>
+          <div class="help-card">
+            <h4>SciPy (Numeric)</h4>
+            <p>The experimental C-compiled engine. Best for approximating unsolvable definite integrals.</p>
+          </div>
+        </div>
 
-    <h3 style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--fg-dim); margin-top: 1.5rem; margin-bottom: 0.5rem;">2. Editor Superpowers</h3>
-    <div class="help-grid" style="grid-template-columns: 1fr 1fr;">
-      <div class="help-card">
-        <h4>Tab Completion</h4>
-        <p>Type <code>\int</code> and press <b>Tab</b> to generate structural bounds automatically.</p>
-      </div>
-      <div class="help-card">
-        <h4>Auto-Brackets</h4>
-        <p>Typing <code>(</code> or <code>[</code> will automatically close the pair and put your cursor inside.</p>
-      </div>
-    </div>
+        <h3 style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--fg-dim); margin-top: 1.5rem; margin-bottom: 0.5rem;">2. Editor Superpowers</h3>
+        <div class="help-grid" style="grid-template-columns: 1fr 1fr;">
+          <div class="help-card">
+            <h4>Tab Completion</h4>
+            <p>Type <code>\int</code> and press <b>Tab</b> to generate structural bounds automatically.</p>
+          </div>
+          <div class="help-card">
+            <h4>Auto-Brackets</h4>
+            <p>Typing <code>(</code> or <code>[</code> will automatically close the pair and put your cursor inside.</p>
+          </div>
+        </div>
 
-    <h3 style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--fg-dim); margin-top: 1.5rem; margin-bottom: 0.5rem;">3. Diagnostics & Hotkeys</h3>
-    <div class="help-grid" style="grid-template-columns: 1fr 1fr;">
-      <div class="help-card">
-        <h4>Command Palette</h4>
-        <p>Press <b>Ctrl+K</b> or <b>Cmd+K</b> to access themes, engine toggles, and settings.</p>
+        <h3 style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--fg-dim); margin-top: 1.5rem; margin-bottom: 0.5rem;">3. Diagnostics & Hotkeys</h3>
+        <div class="help-grid" style="grid-template-columns: 1fr 1fr;">
+          <div class="help-card">
+            <h4>Command Palette</h4>
+            <p>Press <b>Ctrl+K</b> or <b>Cmd+K</b> to access themes, engine toggles, and settings.</p>
+          </div>
+          <div class="help-card">
+            <h4>Hacker Console</h4>
+            <p>Press the backtick key <b>`</b> to view real-time system telemetry and asynchronous step-by-step math breakdowns.</p>
+          </div>
+        </div>
       </div>
-      <div class="help-card">
-        <h4>Hacker Console</h4>
-        <p>Press the backtick key <b>`</b> to view real-time system telemetry and asynchronous step-by-step math breakdowns.</p>
+
+      <div style="flex: 2; border-left: 1px solid var(--panel-border); padding-left: 3rem; display: flex; flex-direction: column; gap: 1.25rem;">
+        <div>
+          <h3 style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--fg-dim); margin-top: 0; margin-bottom: 0.5rem;">Julia Desktop Engine</h3>
+          <p style="font-size: 0.85rem; color: var(--fg-dim); line-height: 1.5; margin: 0;">
+            Connect a native Julia companion instance to unlock high-performance computing, bypassing the browser's execution limits.
+          </p>
+        </div>
+
+        <div>
+          <h4 style="font-size: 0.85rem; color: var(--fg); margin: 0 0 0.25rem 0; font-weight: 600;">The Fallback System</h4>
+          <p style="font-size: 0.82rem; color: var(--fg-dim); line-height: 1.4; margin: 0;">
+            If the default browser engine (SymPy WASM) takes too long or fails on a complex operation, Parse will show an inline notification. 
+            You can then opt to hand off the computation to Julia with a single click.
+          </p>
+        </div>
+
+        <div>
+          <h4 style="font-size: 0.85rem; color: var(--fg); margin: 0 0 0.25rem 0; font-weight: 600;">Why a Local Server?</h4>
+          <p style="font-size: 0.82rem; color: var(--fg-dim); line-height: 1.4; margin: 0;">
+            Web browsers run inside a sandboxed environment with strict RAM, thread, and process limits.
+            By running a lightweight native local server (listening on port <code>8001</code>), the compiler can access your machine's raw multi-threaded power, JIT compilation, and native algebra solvers.
+          </p>
+        </div>
+
+        <div style="margin: 0.25rem 0;">
+          <a href="/julia-desktop-engine.zip" download style="display: block; text-align: center; padding: 0.75rem; background: var(--caret-col); color: var(--bg); border-radius: 6px; font-weight: 600; text-decoration: none; font-size: 0.85rem; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+            Download Desktop Engine (.zip)
+          </a>
+        </div>
+
+        <div>
+          <h4 style="font-size: 0.85rem; color: var(--fg); margin: 0 0 0.5rem 0; font-weight: 600;">Installation & Setup</h4>
+          <ol style="font-size: 0.82rem; padding-left: 1.1rem; color: var(--fg-dim); line-height: 1.5; margin: 0;">
+            <li style="margin-bottom: 0.4rem;">
+              Install Julia from <a href="https://julialang.org/downloads/" target="_blank" style="color:var(--caret-col);text-decoration:none;font-weight:600;">julialang.org</a>.
+            </li>
+            <li style="margin-bottom: 0.4rem;">
+              Extract the downloaded <code>julia-desktop-engine.zip</code> to a folder of your choice.
+            </li>
+            <li>
+              Launch the helper script:
+              <ul style="margin-top: 0.25rem; padding-left: 1rem; list-style-type: disc;">
+                <li style="margin-bottom: 0.2rem;"><strong>Windows:</strong> Double-click <code>launcher.bat</code></li>
+                <li><strong>Mac/Linux:</strong> Execute <code>./launcher.sh</code> in your terminal</li>
+              </ul>
+              <span style="display: block; font-size: 0.75rem; color: var(--fg-dim); margin-top: 0.25rem; font-style: italic;">
+                The script will verify and auto-install any required dependencies (HTTP, JSON3, SymPy, Roots). Once running, the indicator in the top-left will turn green!
+              </span>
+            </li>
+          </ol>
+        </div>
       </div>
     </div>
 
@@ -1401,7 +1458,6 @@
       <label>
         <input type="checkbox" id="help-opt-out"> Don't show this automatically again
       </label>
-      <a href="/julia-desktop-engine.zip" download style="color:var(--caret-col); text-decoration:none;">Download Julia Desktop Engine</a>
     </div>
   </div>
 </div>
@@ -2619,7 +2675,10 @@ function _createWorker(i) {
           setTimeout(() => {
             splash.classList.add('loaded');
             app.classList.add('ready');
-            setTimeout(() => { splash.remove(); }, 1000);
+            setTimeout(() => { 
+              splash.remove(); 
+              if (typeof _checkOnboarding === 'function') _checkOnboarding();
+            }, 1000);
           }, 700);
         }
 
@@ -3991,7 +4050,7 @@ document.getElementById('app').addEventListener('scroll', () => {
   window._setSplashProgress = _setSplashProgress;
   window._SPLASH_STEPS = STEPS;
 
-  const savedTheme = _lsLoad(LS.THEME, 'dark');
+  const savedTheme = _lsLoad(LS.THEME, 'light');
   _applyTheme(savedTheme);
 
   settings.showApprox      = _lsLoad(LS.SHOW_APPROX,   false);
@@ -4034,10 +4093,36 @@ document.getElementById('app').addEventListener('scroll', () => {
     document.body.classList.add('hover-export');
   }
 
-  // Focus the last block by default
   const lastId = blocks[blocks.length - 1].id;
   const lastTa = document.getElementById(`in-${lastId}`);
   if (lastTa) lastTa.focus();
+
+  // ── Onboarding Logic ─────────────────────────────────────────────────────────
+  window._checkOnboarding = function() {
+    const hideHelp = localStorage.getItem('parse_hide_help') === 'true';
+    if (hideHelp) return;
+    
+    let visitCount = parseInt(localStorage.getItem('parse_visit_count') || '0', 10);
+    if (visitCount < 3) {
+      visitCount++;
+      localStorage.setItem('parse_visit_count', visitCount.toString());
+      setTimeout(openHelp, 800);
+    }
+  };
+  
+  // Wire up the opt-out checkbox (in case it wasn't wired up earlier)
+  const optOutCheckbox = document.getElementById('help-opt-out');
+  if (optOutCheckbox) {
+    optOutCheckbox.checked = localStorage.getItem('parse_hide_help') === 'true';
+    optOutCheckbox.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        localStorage.setItem('parse_hide_help', 'true');
+      } else {
+        localStorage.removeItem('parse_hide_help');
+      }
+    });
+  }
+
 })();
 
 </script>

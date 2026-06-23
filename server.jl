@@ -113,7 +113,6 @@ Solver cascade (in priority order):
 
 Throws on unrecoverable parse or evaluation errors.
 """
-function evaluate_expression(latex::AbstractString)::Tuple{String,String}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Python SymPy Bridge Setup
