@@ -1,9 +1,24 @@
-const CACHE_NAME = 'parse-calc-v3';
+const CACHE_NAME = 'parse-calc-v5';
+
+const PRECACHE_URLS = [
+  './',
+  './index.html',
+  './themes.css',
+  './worker.js',
+  './latex_calculator.py',
+  './manifest.json',
+  './assets/icon-192.svg',
+  './assets/icon-512.svg'
+];
 
 // We intercept all requests. For standard app assets, we cache them.
 // For Pyodide CDN assets, we cache them dynamically as they are requested.
 self.addEventListener('install', event => {
-  self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(PRECACHE_URLS))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', event => {

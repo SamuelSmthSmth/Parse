@@ -102,6 +102,21 @@
       height: 100%;
     }
 
+    /* ── Main Ambient Canvas ───────────────────────────────── */
+    #main-ambient-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: -1;
+      opacity: 0;
+      transition: opacity 1s ease;
+    }
+    #main-ambient-canvas.visible {
+      opacity: 1;
+    }
+
     /* ── Scanlines overlay ─────────────────────────────────── */
     #splash-screen::after {
       content: '';
@@ -1520,6 +1535,7 @@ const LS = {
   HOVER_EXPORT:   'latexcalc_hoverExport',
   SHOW_TERMINAL:  'latexcalc_showTerminal',
   AUTO_JULIA:     'latexcalc_autoJulia',
+  AMBIENT_PARTICLES: 'latexcalc_ambientParticles',
 };
 
 
@@ -1540,6 +1556,7 @@ const settings = {
   hoverExport:     false,
   showTerminal:    false,
   autoJulia:       false,
+  ambientParticles: false,
 };
 
 /**
@@ -1574,6 +1591,95 @@ function _applyTheme(theme) {
     themeBtn.textContent = formatted;
   }
   _lsSave(LS.THEME, theme);
+  window.dispatchEvent(new Event('themeChanged'));
+}
+
+let _ambientAnimFrame;
+function _applyAmbientParticles() {
+  let canvas = document.getElementById('main-ambient-canvas');
+  if (!settings.ambientParticles) {
+    if (canvas) {
+      canvas.classList.remove('visible');
+      setTimeout(() => {
+        cancelAnimationFrame(_ambientAnimFrame);
+        if (canvas.parentNode) canvas.remove();
+      }, 1000);
+    }
+    return;
+  }
+  
+  if (!canvas) {
+    canvas = document.createElement('canvas');
+    canvas.id = 'main-ambient-canvas';
+    document.body.appendChild(canvas);
+    
+    // trigger reflow
+    void canvas.offsetWidth;
+    canvas.classList.add('visible');
+    
+    const ctx = canvas.getContext('2d');
+    let W = canvas.width = window.innerWidth;
+    let H = canvas.height = window.innerHeight;
+    
+    let accentColor = getComputedStyle(document.documentElement).getPropertyValue('--caret-col').trim() || '#8b78ff';
+
+    const PARTICLE_COUNT = 80;
+    const particles = Array.from({ length: PARTICLE_COUNT }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.2,
+      vy: (Math.random() - 0.5) * 0.2,
+      r: Math.random() * 1.0 + 0.2,
+      alpha: Math.random() * 0.18 + 0.04,
+    }));
+
+    function drawParticles() {
+      ctx.clearRect(0, 0, W, H);
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 100) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = accentColor;
+            ctx.globalAlpha = (1 - dist / 100) * 0.06;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+          }
+        }
+      }
+      for (const p of particles) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = accentColor;
+        ctx.globalAlpha = p.alpha;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+        if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+      }
+      _ambientAnimFrame = requestAnimationFrame(drawParticles);
+    }
+    drawParticles();
+
+    window.addEventListener('resize', () => {
+      if (document.getElementById('main-ambient-canvas')) {
+        W = canvas.width = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+      }
+    }, { passive: true });
+    
+    window.addEventListener('themeChanged', () => {
+      setTimeout(() => {
+        accentColor = getComputedStyle(document.documentElement).getPropertyValue('--caret-col').trim() || '#8b78ff';
+      }, 50); // slight delay to allow CSS variable to update
+    });
+  }
 }
 
 if (themeBtn) {
@@ -2145,7 +2251,8 @@ function _renderCmdResults() {
       { type: 'cmd', label: `Settings: Engine: Auto-Pass to Julia`, toggleState: settings.autoJulia, keywords: 'engine auto pass julia solve setting' },
       { type: 'cmd', label: `Settings: Engine: SciPy Numeric Mode (Experimental)`, toggleState: settings.numericMode, keywords: 'engine scipy numeric math integrate experimental setting' },
       { type: 'cmd', label: `Settings: Hover LaTeX Export`, toggleState: settings.hoverExport, keywords: 'hover export latex copy button clipboard setting' },
-      { type: 'cmd', label: `Settings: Show Terminal Console`, toggleState: settings.showTerminal, keywords: 'terminal console telemetry debug log setting' }
+      { type: 'cmd', label: `Settings: Show Terminal Console`, toggleState: settings.showTerminal, keywords: 'terminal console telemetry debug log setting' },
+      { type: 'cmd', label: `Settings: Toggle Ambient Particles`, toggleState: settings.ambientParticles, keywords: 'ambient floating particles background canvas setting' }
     ];
     settingsCmds.forEach(cmd => {
       if (!query || cmd.label.toLowerCase().includes(query) || cmd.keywords.includes(query)) _cmdItems.push(cmd);
@@ -2279,6 +2386,10 @@ function _executeCmd(item) {
       } else {
         blocks.forEach(b => { if (b.approx) _renderApprox(b.id, b.approx); });
       }
+    } else if (item.label.includes('Ambient Particles')) {
+      settings.ambientParticles = !settings.ambientParticles;
+      _lsSave(LS.AMBIENT_PARTICLES, settings.ambientParticles);
+      _applyAmbientParticles();
     } else if (item.label.includes('Assume')) {
       settings.assumeReal = !settings.assumeReal;
       _lsSave(LS.ASSUME_REAL, settings.assumeReal);
@@ -3838,6 +3949,9 @@ document.getElementById('app').addEventListener('scroll', () => {
   settings.hoverExport     = _lsLoad(LS.HOVER_EXPORT,  false);
   settings.showTerminal    = _lsLoad(LS.SHOW_TERMINAL, false);
   settings.autoJulia       = _lsLoad(LS.AUTO_JULIA,    false);
+  settings.ambientParticles= _lsLoad(LS.AMBIENT_PARTICLES, false);
+  
+  _applyAmbientParticles();
 
   // Load Notebook array
   let savedNotebook = _lsLoad(LS.INPUT, null);
